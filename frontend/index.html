@@ -1,0 +1,2215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrossRent Full Rental Demo</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Circle Programmable Wallets Integration (no external dependencies needed) -->
+    <style>
+        /* Custom font for a modern look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        /* Enhanced button styles */
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(17, 153, 142, 0.4);
+        }
+        
+        /* Enhanced card shadows */
+        .card-enhanced {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .card-enhanced:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Custom scrollbar for aesthetics */
+        .dashboard-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .dashboard-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 4px;
+        }
+        /* Guide sidebar adjustments */
+        .guide-open {
+            max-width: calc(100vw - 370px) !important;
+            margin-right: 360px;
+        }
+        @media (max-width: 1400px) {
+            .guide-open {
+                max-width: calc(100vw - 340px) !important;
+                margin-right: 330px;
+            }
+        }
+        @media (max-width: 768px) {
+            .guide-open {
+                max-width: 100vw !important;
+                margin-right: 0px;
+            }
+            #guide-sidebar {
+                position: fixed !important;
+                top: 0 !important;
+                right: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                z-index: 50 !important;
+                background: rgba(0,0,0,0.5) !important;
+            }
+            #guide-sidebar > div:last-child {
+                background: white;
+                height: calc(100vh - 60px);
+                margin-top: 60px;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-start justify-center p-4 sm:p-8">
+
+    <div id="app-container" class="w-full max-w-4xl bg-white shadow-2xl rounded-xl p-6 sm:p-10 border border-gray-100 card-enhanced">
+
+        <!-- Header -->
+        <header class="mb-8 pb-4 border-b border-blue-100 flex justify-between items-center">
+            <h1 class="text-3xl font-extrabold text-blue-800 tracking-tight">
+                CrossRent Demo
+            </h1>
+            <div class="flex items-center space-x-4">
+                <!-- User Stats & Feedback -->
+                <div class="flex items-center space-x-2 text-xs">
+                    <div class="bg-green-50 border border-green-200 rounded-lg px-3 py-1">
+                        <span class="text-green-700 font-semibold" id="user-stats">👥 0 users tested • ⭐ 0/5 rating</span>
+                    </div>
+                    <button onclick="toggleTestingGuide()" class="px-3 py-1 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg font-medium transition">
+                        📖 Step-by-Step Guide
+                    </button>
+                    <button onclick="showFeedbackModal()" class="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-medium transition">
+                        📝 Give Feedback
+                    </button>
+                    <button onclick="showFeedbackViewer()" class="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition">
+                        👀 View Feedback
+                    </button>
+                </div>
+                
+                <!-- Perspective Switcher -->
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                    <button id="tenant-view-btn" onclick="switchPerspective('tenant')" class="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded transition">
+                        👤 Tenant View
+                    </button>
+                    <button id="landlord-view-btn" onclick="switchPerspective('landlord')" class="px-3 py-1 text-xs font-medium text-gray-600 hover:text-gray-800 rounded transition">
+                        🏠 Landlord View
+                    </button>
+                </div>
+                
+                <button id="wallet-connect-btn" onclick="createUserWallet('tenant')" class="px-4 py-2 btn-primary text-white text-sm font-medium rounded-lg transition duration-150">
+                    Create Circle Wallet
+                </button>
+                <div id="wallet-status" class="text-xs">
+                    <div class="wallet-address text-gray-600">Circle Wallet: Not Created</div>
+                    <div id="wallet-balance" class="text-green-600 font-medium hidden">Balance: $0.00 USDC</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Will Be Rendered Here -->
+        <div id="content">
+            <!-- Initial screen will be rendered by JS -->
+        </div>
+
+        <!-- Toast Notifications Container -->
+        <div id="toasts" class="fixed top-5 right-5 space-y-2 z-40"></div>
+        
+        <!-- Persistent Testing Guide Sidebar -->
+        <div id="guide-sidebar" class="fixed right-4 top-20 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-30 hidden transition-transform duration-300 ease-in-out">
+            <div class="bg-purple-50 border-b border-purple-200 p-3 flex justify-between items-center">
+                <h4 class="font-bold text-purple-800 text-sm">📖 Testing Guide</h4>
+                <button onclick="toggleTestingGuide()" class="text-purple-400 hover:text-purple-600 text-lg">×</button>
+            </div>
+            <div class="p-4 max-h-96 overflow-y-auto text-xs space-y-3">
+                <div class="bg-blue-50 border border-blue-200 rounded p-2">
+                    <p class="font-semibold text-blue-800">🎯 Goal: Test dual-perspective rental ecosystem</p>
+                </div>
+                
+                <div>
+                    <h5 class="font-bold text-gray-800 mb-1">Phase 1: Tenant Experience</h5>
+                    <ol class="list-decimal list-inside space-y-1 text-gray-700 text-xs">
+                        <li><strong>Create Circle Wallet</strong> - Click blue button</li>
+                        <li><strong>Fund Wallet</strong> - Get $100 USDC automatically</li>
+                        <li><strong>Create Escrow</strong> - Set up rental agreement</li>
+                        <li><strong>Pay Rent</strong> - Test Circle bridge transaction</li>
+                    </ol>
+                </div>
+                
+                <div>
+                    <h5 class="font-bold text-gray-800 mb-1">Phase 2: Dual-Perspective</h5>
+                    <ol class="list-decimal list-inside space-y-1 text-gray-700 text-xs">
+                        <li><strong>Switch to Landlord</strong> - Click "🏠 Landlord View"</li>
+                        <li><strong>See Notifications</strong> - Watch payment confirmations</li>
+                        <li><strong>Test Real-time</strong> - Switch during payments</li>
+                    </ol>
+                </div>
+                
+                <div>
+                    <h5 class="font-bold text-gray-800 mb-1">Phase 3: Advanced Features</h5>
+                    <ol class="list-decimal list-inside space-y-1 text-gray-700 text-xs">
+                        <li><strong>Test Disputes</strong> - Try multisig resolution</li>
+                        <li><strong>Release Deposits</strong> - Complete lease cycle</li>
+                        <li><strong>Give Feedback</strong> - Rate your experience</li>
+                    </ol>
+                </div>
+                
+                <div class="bg-green-50 border border-green-200 rounded p-2">
+                    <p class="font-semibold text-green-800 text-xs">💡 Safety Deposit Pool:</p>
+                    <p class="text-green-700 text-xs">10% of deposits go into shared insurance fund protecting landlords from tenant defaults</p>
+                </div>
+                
+                <div class="bg-yellow-50 border border-yellow-200 rounded p-2">
+                    <p class="text-yellow-800 text-xs">
+                        <strong>⭐ Key:</strong> Show judges complete rental ecosystem with Circle Programmable Wallets!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testing Guide Modal -->
+        <div id="guide-modal" class="fixed inset-0 bg-black bg-opacity-50 z-60 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 shadow-2xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">📖 Demo Testing Guide</h3>
+                    <button onclick="hideTestingGuide()" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                </div>
+                
+                <div class="space-y-4 text-sm">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p class="font-semibold text-blue-800">🎯 Goal: Test complete dual-perspective rental ecosystem</p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold text-gray-800 mb-2">Phase 1: Tenant Experience (👤)</h4>
+                        <ol class="list-decimal list-inside space-y-1 text-gray-700 ml-2">
+                            <li><strong>Create Circle Wallet</strong> - Watch automatic wallet creation</li>
+                            <li><strong>Fund Wallet</strong> - $100 USDC demo funding</li>
+                            <li><strong>Create Escrow</strong> - Set up rental agreement</li>
+                            <li><strong>Pay Rent</strong> - Test Circle bridge transaction</li>
+                        </ol>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold text-gray-800 mb-2">Phase 2: Dual-Perspective Demo (🏠👤)</h4>
+                        <ol class="list-decimal list-inside space-y-1 text-gray-700 ml-2">
+                            <li><strong>Switch to Landlord View</strong> - Click "🏠 Landlord View" toggle</li>
+                            <li><strong>See Payment Notifications</strong> - Real-time payment confirmations</li>
+                            <li><strong>Test Real-time Sync</strong> - Switch views during payments</li>
+                        </ol>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold text-gray-800 mb-2">Phase 3: Feedback (📝)</h4>
+                        <ol class="list-decimal list-inside space-y-1 text-gray-700 ml-2">
+                            <li><strong>Rate Experience</strong> - 1-5 stars</li>
+                            <li><strong>Select Favorite Features</strong> - Multiple choice</li>
+                            <li><strong>Submit Feedback</strong> - Help improve the demo</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <h4 class="font-bold text-green-800 mb-2">🎬 Key Features to Experience:</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                            <div>✅ Circle Programmable Wallets</div>
+                            <div>✅ CCTP Cross-Chain Bridge</div>
+                            <div>✅ Dual Perspective Views</div>
+                            <div>✅ Real-time Notifications</div>
+                            <div>✅ Smart Contract Escrows</div>
+                            <div>✅ Social Proof System</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p class="text-sm text-yellow-800">
+                            <strong>💡 Pro Tip:</strong> This demo shows the complete rental ecosystem from both tenant and landlord perspectives - something unique that judges will appreciate!
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end">
+                    <button onclick="hideTestingGuide()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
+                        Got it! Let's Test 🚀
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Feedback Modal -->
+        <div id="feedback-modal" class="fixed inset-0 bg-black bg-opacity-50 z-60 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">📝 Share Your Feedback</h3>
+                <form id="feedback-form" onsubmit="submitFeedback(event)">
+                    <!-- Rating -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Rating (1-5 stars)</label>
+                        <div class="flex space-x-1" id="star-rating">
+                            <button type="button" onclick="setRating(1)" class="star text-2xl text-gray-300 hover:text-yellow-400">⭐</button>
+                            <button type="button" onclick="setRating(2)" class="star text-2xl text-gray-300 hover:text-yellow-400">⭐</button>
+                            <button type="button" onclick="setRating(3)" class="star text-2xl text-gray-300 hover:text-yellow-400">⭐</button>
+                            <button type="button" onclick="setRating(4)" class="star text-2xl text-gray-300 hover:text-yellow-400">⭐</button>
+                            <button type="button" onclick="setRating(5)" class="star text-2xl text-gray-300 hover:text-yellow-400">⭐</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Comment -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Your thoughts on the demo:</label>
+                        <textarea name="comment" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="What did you like? Any suggestions?"></textarea>
+                    </div>
+                    
+                    <!-- Favorite Features -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Favorite features (select all that apply):</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="features" value="circle_wallets" class="mr-2">
+                                <span class="text-sm">Circle Programmable Wallets</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="features" value="dual_perspective" class="mr-2">
+                                <span class="text-sm">Dual Perspective Demo</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="features" value="real_time_notifications" class="mr-2">
+                                <span class="text-sm">Real-time Notifications</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="features" value="escrow_management" class="mr-2">
+                                <span class="text-sm">Escrow Management</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="features" value="cross_chain_bridge" class="mr-2">
+                                <span class="text-sm">Cross-chain Bridge</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Buttons -->
+                    <div class="flex space-x-3">
+                        <button type="submit" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition font-medium">
+                            Submit Feedback
+                        </button>
+                        <button type="button" onclick="hideFeedbackModal()" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition font-medium">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CIRCLE PROGRAMMABLE WALLETS INTEGRATION ---
+        
+        let currentUser = null;
+        let userWallet = null;
+        let isDevMode = true; // Circle dev-controlled wallet mode for Arc hackathon
+
+        // Circle API configuration (backend endpoints)
+        const API_CONFIG = {
+            baseUrl: 'http://localhost:3001/api', // Your backend API
+            endpoints: {
+                createWallet: '/wallet/create',
+                fundWallet: '/wallet/fund',
+                bridgeUsdc: '/usdc/bridge',
+                executeContract: '/contract/execute',
+                getTransactionStatus: '/transactions/status'
+            }
+        };
+        
+        // Backend URL for feedback system
+        const backendUrl = 'http://localhost:3001';
+
+        // Arc blockchain configuration
+        const ARC_CONFIG = {
+            chainId: 'ARC-SEPOLIA',
+            rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc', // Arc testnet RPC
+            explorerUrl: 'https://sepolia.arbiscan.io',
+            contracts: {
+                escrow: '0x742d35cC6634C0532925a3B8D4caF4E2f27b2c8A',
+                usdc: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+                reputation: '0x9f8A17D7C8A7A4f1A2a5b3A8C9C7B1A2c3D4e5F6'
+            }
+        };
+
+        // Contract addresses (UPDATE THESE AFTER DEPLOYMENT TO ARC)
+        const CONTRACT_ADDRESSES = {
+            RentCreditEscrow: "0x0000000000000000000000000000000000000000", // Deploy to Arc
+            ReputationSBT: "0x0000000000000000000000000000000000000000", // Deploy to Arc  
+            RiskBufferVault: "0x0000000000000000000000000000000000000000", // Deploy to Arc
+            USDC: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" // USDC on Arc Sepolia
+        };
+
+        // Mock constants
+        const DEV_WALLET_ADDRESS = "0x742d35cC6634C0532925a3B8D4caF4E2f27b2c8A";
+        const MOCK_USDC_TOKEN = "0xMockUSDC0000000000000000000000000000";
+
+        const appState = {
+            currentScreen: 'dashboard',
+            currentPerspective: 'tenant', // 'tenant' or 'landlord'
+            arcDevBalance: 100.00, // Start with demo funding amount
+            reputationScore: 0, // New users start with zero reputation
+            riskBuffer: 0.00, // Will be funded when first escrow is created
+            
+            // Real-time transaction notifications
+            recentTransactions: [],
+            
+            // Tenant data
+            tenantWallet: null,
+            tenantPayments: [],
+            
+            // Landlord data  
+            landlordWallet: null,
+            landlordProperties: [],
+            incomingPayments: [],
+            
+            activeEscrows: [
+                {
+                    id: 1,
+                    landlord: "0xLandlord_A123...",
+                    deposit: 2500,
+                    rent: 1250, // Variable rent: $1,250/month
+                    durationMonths: 12,
+                    paidMonths: 8,
+                    damageThreshold: 500,
+                    inspectionRequired: true,
+                    tenantConfirmation: false,
+                    status: 'Active',
+                    nextPaymentDue: new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleDateString(),
+                },
+                {
+                    id: 2,
+                    landlord: "0xLandlord_B456...",
+                    deposit: 1800,
+                    rent: 875, // Variable rent: $875/month
+                    durationMonths: 6,
+                    paidMonths: 2,
+                    damageThreshold: 300,
+                    inspectionRequired: false,
+                    tenantConfirmation: true,
+                    status: 'Active',
+                    nextPaymentDue: new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleDateString(),
+                }
+            ]
+        };
+
+        // --- IMMEDIATELY AVAILABLE FUNCTIONS ---
+        
+        // Create Circle Programmable Wallet (dev-controlled)
+        async function createUserWallet(userType = 'tenant') {
+            console.log(`🎬 DEMO STEP 1: Creating Circle wallet for ${userType}...`);
+            
+            const walletBtn = document.getElementById('wallet-connect-btn');
+            const originalText = walletBtn.textContent;
+            
+            try {
+                // Disable button and show loading
+                walletBtn.disabled = true;
+                walletBtn.textContent = '⏳ Creating Wallet...';
+                walletBtn.className = 'px-4 py-2 bg-gray-400 text-white text-sm font-medium rounded-lg cursor-not-allowed';
+                
+                showToast(`🔄 Step 1: Creating ${userType} Circle wallet...`, 'info');
+                
+                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.createWallet}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userType: userType,
+                        blockchains: [ARC_CONFIG.chainId],
+                        accountType: 'SCA', // Smart Contract Account
+                        custodyType: 'DEVELOPER' // Dev-controlled wallet requirement
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    userWallet = {
+                        walletId: data.walletId,
+                        address: data.address,
+                        userType: userType
+                    };
+                    
+                    currentUser = {
+                        id: data.userId,
+                        type: userType,
+                        wallet: userWallet
+                    };
+                    
+                    console.log(`🎬 DEMO STEP 2: Wallet created with address ${data.address}`);
+                    showToast(`✅ Step 2: Circle wallet created! ${truncateAddress(data.address)}`, 'success');
+                    updateWalletDisplay();
+                    
+                    // Auto-fund the wallet for demo - Step 3
+                    console.log(`🎬 DEMO STEP 3: Auto-funding wallet with $100 USDC...`);
+                    walletBtn.textContent = '⏳ Funding Wallet...';
+                    await fundUserWallet(100); // $100 USDC for demo
+                    
+                    return data;
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                console.error('Wallet creation failed:', error);
+                showToast('Wallet creation failed: ' + error.message, 'error');
+                
+                // Reset button on error
+                walletBtn.disabled = false;
+                walletBtn.textContent = originalText;
+                walletBtn.className = 'px-4 py-2 btn-primary text-white text-sm font-medium rounded-lg transition duration-150';
+                
+                throw error;
+            }
+        }
+
+        // Fund wallet with USDC from master wallet
+        async function fundUserWallet(amount) {
+            if (!userWallet) {
+                throw new Error('No user wallet found');
+            }
+
+            try {
+                showToast(`🔄 Step 3: Funding wallet with $${amount} USDC...`, 'info');
+                
+                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.fundWallet}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        walletId: userWallet.walletId,
+                        amount: amount.toString(),
+                        currency: 'USDC'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log(`🎬 DEMO STEP 3 COMPLETE: Wallet funded with $${amount} USDC`);
+                    showToast(`✅ Step 3: Wallet funded with $${amount} USDC! Ready for demo!`, 'success');
+                    appState.arcDevBalance = amount; // Update UI balance
+                    updateWalletDisplay(); // Refresh to show balance
+                    return data;
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                console.error('Wallet funding failed:', error);
+                showToast('Wallet funding failed: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // Bridge USDC using Circle CCTP
+        async function bridgeUsdcViaCircle(amount, destinationChain = ARC_CONFIG.chainId) {
+            if (!userWallet) {
+                throw new Error('No user wallet found');
+            }
+
+            try {
+                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.bridgeUsdc}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        walletId: userWallet.walletId,
+                        sourceChain: 'ETH-SEPOLIA',
+                        destinationChain: destinationChain,
+                        amount: amount.toString(),
+                        token: 'USDC',
+                        destinationAddress: userWallet.address
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(`CCTP bridge initiated! TX: ${data.transactionHash.substring(0, 8)}...`, 'success');
+                    return data;
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                console.error('CCTP bridge failed:', error);
+                showToast('Bridge failed: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // Execute smart contract function via Circle API
+        async function executeSmartContract(contractAddress, method, args = {}) {
+            if (!userWallet) {
+                throw new Error('No user wallet found');
+            }
+
+            try {
+                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.executeContract}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        walletId: userWallet.walletId,
+                        contractAddress: contractAddress,
+                        method: method,
+                        args: args,
+                        blockchain: ARC_CONFIG.chainId
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(`Contract executed! TX: ${data.transactionHash.substring(0, 8)}...`, 'success');
+                    return data;
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                console.error('Contract execution failed:', error);
+                showToast('Contract execution failed: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // Screen rendering function
+        function renderScreen(screenName) {
+            console.log('renderScreen called with:', screenName);
+            appState.currentScreen = screenName;
+            const contentDiv = document.getElementById('content');
+            
+            if (!contentDiv) {
+                console.error('Content div not found!');
+                return;
+            }
+            
+            contentDiv.innerHTML = '';
+
+            switch (screenName) {
+                case 'bridge':
+                    console.log('Rendering bridge screen');
+                    contentDiv.innerHTML = renderBridgeScreen();
+                    break;
+                case 'createEscrow':
+                    console.log('Rendering createEscrow screen');
+                    contentDiv.innerHTML = renderCreateEscrowScreen();
+                    break;
+                case 'dashboard':
+                default:
+                    console.log('Rendering dashboard screen');
+                    contentDiv.innerHTML = renderDashboardScreen();
+                    break;
+            }
+            
+            console.log('Screen rendered successfully');
+        }
+
+        // Utility functions
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+
+        function truncateAddress(address) {
+            if (!address) return 'Not Connected';
+            return address.substring(0, 6) + '...' + address.substring(address.length - 4);
+        }
+
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toasts');
+            if (!toastContainer) return;
+            
+            const toast = document.createElement('div');
+            const bgColors = {
+                'info': 'bg-blue-500',
+                'success': 'bg-green-500',
+                'warning': 'bg-yellow-500',
+                'error': 'bg-red-500'
+            };
+            
+            toast.className = "px-4 py-3 rounded-lg text-white font-medium shadow-lg " + bgColors[type];
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 4000);
+        }
+
+        function updateWalletDisplay() {
+            const walletDisplays = document.querySelectorAll('.wallet-address');
+            const connectBtn = document.getElementById('wallet-connect-btn');
+            
+            const isDevWallet = currentAccount && currentAccount.toLowerCase() === DEV_WALLET_CONFIG.address.toLowerCase();
+            
+            walletDisplays.forEach(display => {
+                if (currentAccount) {
+                    const truncated = truncateAddress(currentAccount);
+                    display.textContent = isDevWallet ? `${truncated} (DEV)` : truncated;
+                } else {
+                    display.textContent = 'Not Connected';
+                }
+            });
+            
+            if (connectBtn) {
+                if (currentAccount) {
+                    connectBtn.textContent = isDevWallet ? 'Dev Wallet Connected' : 'Connected';
+                    connectBtn.style.backgroundColor = isDevWallet ? '#dc2626' : '#059669';
+                } else {
+                    connectBtn.textContent = 'Connect Dev Wallet';
+                    connectBtn.style.backgroundColor = '#2563eb';
+                }
+            }
+        }
+
+        // Placeholder functions
+        function handleRentPayment(escrowId) { console.log('Rent payment for escrow:', escrowId); }
+        function handleReleaseDeposit(escrowId) { console.log('Release deposit for escrow:', escrowId); }
+        function handleDispute(escrowId) { console.log('Dispute for escrow:', escrowId); }
+
+        // EXPORT TO WINDOW IMMEDIATELY
+        window.renderScreen = renderScreen;
+        window.initWeb3 = initWeb3;
+        window.handleRentPayment = handleRentPayment;
+        window.handleReleaseDeposit = handleReleaseDeposit;
+        window.handleDispute = handleDispute;
+        window.truncateAddress = truncateAddress;
+
+        // Contract ABIs (simplified for demo - would be imported from build artifacts)
+        const ABIS = {
+            CrossRentBridge: [
+                {
+                    "inputs": [{"name": "token", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "destinationChainId", "type": "uint256"}, {"name": "recipient", "type": "address"}],
+                    "name": "bridgeTokens",
+                    "outputs": [{"name": "nonce", "type": "uint64"}],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                }
+            ],
+            RentCreditEscrow: [
+                {
+                    "inputs": [{"name": "landlord", "type": "address"}, {"name": "tenant", "type": "address"}, {"name": "depositAmount", "type": "uint256"}, {"name": "rentAmount", "type": "uint256"}, {"name": "duration", "type": "uint256"}, {"name": "token", "type": "address"}],
+                    "name": "createEscrow",
+                    "outputs": [{"name": "escrowId", "type": "uint256"}],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [{"name": "escrowId", "type": "uint256"}],
+                    "name": "payRent",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                }
+            ],
+            USDC: [
+                {
+                    "inputs": [{"name": "spender", "type": "address"}, {"name": "amount", "type": "uint256"}],
+                    "name": "approve",
+                    "outputs": [{"name": "", "type": "bool"}],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [{"name": "account", "type": "address"}],
+                    "name": "balanceOf",
+                    "outputs": [{"name": "", "type": "uint256"}],
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ]
+        };
+
+        // Initialize Web3 connection with dev-controlled wallet support
+        async function initWeb3() {
+            console.log('initWeb3 called');
+            
+            if (typeof window.ethereum !== 'undefined') {
+                console.log('MetaMask detected');
+                web3 = new Web3(window.ethereum);
+                try {
+                    // Request account access
+                    console.log('Requesting account access...');
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    currentAccount = accounts[0];
+                    console.log('Connected account:', currentAccount);
+                    
+                    // Check if user is connecting with dev wallet
+                    const isUsingDevWallet = currentAccount.toLowerCase() === DEV_WALLET_CONFIG.address.toLowerCase();
+                    console.log('Is dev wallet:', isUsingDevWallet);
+                    
+                    // Ensure we're on the correct network (Arc testnet)
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x' + DEV_WALLET_CONFIG.chainId.toString(16) }],
+                        });
+                    } catch (switchError) {
+                        // If network doesn't exist, add it
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: '0x' + DEV_WALLET_CONFIG.chainId.toString(16),
+                                    chainName: 'Arc Testnet',
+                                    rpcUrls: [DEV_WALLET_CONFIG.rpcUrl],
+                                    nativeCurrency: {
+                                        name: 'ARC',
+                                        symbol: 'ARC',
+                                        decimals: 18
+                                    }
+                                }]
+                            });
+                        }
+                    }
+                    
+                    // Initialize contracts
+                    initContracts();
+                    
+                    if (isUsingDevWallet) {
+                        showToast(`Connected with DEV WALLET ${currentAccount.substring(0, 8)}... (Admin Mode)`, 'success');
+                    } else {
+                        showToast(`Connected to ${currentAccount.substring(0, 8)}... (Demo Mode)`, 'info');
+                    }
+                    
+                    updateWalletDisplay();
+                    
+                    // Listen for account changes
+                    window.ethereum.on('accountsChanged', handleAccountsChanged);
+                    window.ethereum.on('chainChanged', handleChainChanged);
+                    
+                } catch (error) {
+                    console.error('User rejected connection:', error);
+                    showToast('Please connect your wallet to use CrossRent', 'error');
+                }
+            } else {
+                console.log('MetaMask not detected');
+                showToast('Please install MetaMask to use CrossRent. For dev demo: connect the provided dev wallet.', 'error');
+            }
+        }
+
+        function initContracts() {
+            // Initialize contract instances (removed CrossRentBridge, added EURC)
+            contracts.RentCreditEscrow = new web3.eth.Contract(ABIS.RentCreditEscrow, CONTRACT_ADDRESSES.RentCreditEscrow);
+            contracts.USDC = new web3.eth.Contract(ABIS.USDC, CONTRACT_ADDRESSES.USDC);
+            contracts.EURC = new web3.eth.Contract(ABIS.USDC, CONTRACT_ADDRESSES.EURC); // Same ABI as USDC
+        }
+
+        function handleAccountsChanged(accounts) {
+            if (accounts.length === 0) {
+                currentAccount = null;
+                showToast('Please connect your wallet', 'warning');
+            } else {
+                currentAccount = accounts[0];
+                updateWalletDisplay();
+                showToast(`Switched to ${currentAccount.substring(0, 8)}...`, 'info');
+            }
+        }
+
+        function handleChainChanged(chainId) {
+            // Reload the page to reset state
+            window.location.reload();
+        }
+
+        // Circle transaction status polling
+        let statusPollingInterval = null;
+
+        function startStatusPolling() {
+            if (statusPollingInterval) {
+                clearInterval(statusPollingInterval);
+            }
+
+            statusPollingInterval = setInterval(async () => {
+                if (!userWallet || !appState.activeEscrows.length) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.getTransactionStatus}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            walletId: userWallet.walletId
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success && data.transactions.length > 0) {
+                        console.log('Circle transaction status update:', data);
+                        // Update UI with latest transaction statuses
+                        updateTransactionStatuses(data.transactions);
+                    }
+                    
+                } catch (error) {
+                    console.error('Status polling error:', error);
+                }
+            }, 5000); // Poll every 5 seconds
+        }
+
+        function updateTransactionStatuses(transactions) {
+            transactions.forEach(tx => {
+                if (tx.status === 'CONFIRMED') {
+                    showToast(`Transaction confirmed! ${tx.transactionHash.substring(0, 8)}...`, 'success');
+                } else if (tx.status === 'FAILED') {
+                    showToast(`Transaction failed! ${tx.transactionHash.substring(0, 8)}...`, 'error');
+                }
+            });
+
+            // Re-render current screen to show updates
+            renderScreen(appState.currentScreen);
+        }
+
+        // Update wallet display for Circle wallets
+        function updateWalletDisplay() {
+            const walletDisplays = document.querySelectorAll('.wallet-address');
+            const balanceDisplay = document.getElementById('wallet-balance');
+            const connectBtn = document.getElementById('wallet-connect-btn');
+            
+            walletDisplays.forEach(display => {
+                if (userWallet) {
+                    const truncated = truncateAddress(userWallet.address);
+                    display.textContent = `Circle Wallet: ${truncated}`;
+                    display.className = 'wallet-address text-green-600 font-medium';
+                } else if (currentUser && currentUser.wallet) {
+                    const truncated = truncateAddress(currentUser.wallet.address);
+                    display.textContent = `Circle Wallet: ${truncated}`;
+                    display.className = 'wallet-address text-green-600 font-medium';
+                } else {
+                    display.textContent = 'Circle Wallet: Not Created';
+                    display.className = 'wallet-address text-gray-600';
+                }
+            });
+
+            // Show balance display when wallet exists
+            if (balanceDisplay) {
+                if (userWallet || appState.arcDevBalance > 0) {
+                    balanceDisplay.textContent = `Balance: $${appState.arcDevBalance.toFixed(2)} USDC`;
+                    balanceDisplay.classList.remove('hidden');
+                } else {
+                    balanceDisplay.classList.add('hidden');
+                }
+            }
+            
+            if (connectBtn) {
+                if (userWallet) {
+                    connectBtn.textContent = '✅ Circle Wallet Ready';
+                    connectBtn.style.backgroundColor = '#059669'; // Green for connected
+                    connectBtn.disabled = true;
+                } else {
+                    connectBtn.textContent = 'Create Circle Wallet';
+                    connectBtn.style.backgroundColor = '#2563eb'; // Blue for create
+                    connectBtn.disabled = false;
+                }
+            }
+        }
+
+        function truncateAddress(address) {
+            if (!address) return 'Not Connected';
+            return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+        }
+
+        // Perspective switching for dual demo
+        function switchPerspective(perspective) {
+            console.log(`🎬 DEMO: Switching to ${perspective} perspective`);
+            appState.currentPerspective = perspective;
+            
+            // Update button styles
+            const tenantBtn = document.getElementById('tenant-view-btn');
+            const landlordBtn = document.getElementById('landlord-view-btn');
+            
+            if (perspective === 'tenant') {
+                tenantBtn.className = 'px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded transition';
+                landlordBtn.className = 'px-3 py-1 text-xs font-medium text-gray-600 hover:text-gray-800 rounded transition';
+                
+                // Update wallet button for tenant
+                const walletBtn = document.getElementById('wallet-connect-btn');
+                if (walletBtn && !userWallet) {
+                    walletBtn.textContent = 'Create Tenant Wallet';
+                    walletBtn.onclick = () => createUserWallet('tenant');
+                }
+                
+                showToast(`🏃 Switched to Tenant View - Make payments & build credit!`, 'info');
+            } else {
+                landlordBtn.className = 'px-3 py-1 text-xs font-medium bg-green-600 text-white rounded transition';
+                tenantBtn.className = 'px-3 py-1 text-xs font-medium text-gray-600 hover:text-gray-800 rounded transition';
+                
+                // Update wallet button for landlord
+                const walletBtn = document.getElementById('wallet-connect-btn');
+                if (walletBtn && !userWallet) {
+                    walletBtn.textContent = 'Create Landlord Wallet';
+                    walletBtn.onclick = () => createUserWallet('landlord');
+                }
+                
+                showToast(`🏠 Switched to Landlord View - Monitor payments & manage properties!`, 'info');
+            }
+            
+            // Re-render current screen with new perspective
+            renderScreen(appState.currentScreen);
+        }
+
+        // Real-time payment notification system
+        function addPaymentNotification(payment) {
+            const notification = {
+                id: Date.now(),
+                timestamp: new Date(),
+                ...payment
+            };
+            
+            appState.recentTransactions.unshift(notification);
+            
+            // Keep only last 10 transactions
+            if (appState.recentTransactions.length > 10) {
+                appState.recentTransactions = appState.recentTransactions.slice(0, 10);
+            }
+            
+            // Show real-time notification based on perspective
+            if (appState.currentPerspective === 'landlord' && payment.type === 'rent_payment') {
+                showToast(`💰 RENT RECEIVED! $${payment.amount} from ${truncateAddress(payment.from)}`, 'success');
+            }
+            
+            // Re-render to show updated notifications
+            setTimeout(() => renderScreen(appState.currentScreen), 500);
+        }
+
+        // --- TESTING GUIDE SYSTEM ---
+        
+        function toggleTestingGuide() {
+            const sidebar = document.getElementById('guide-sidebar');
+            const modal = document.getElementById('guide-modal');
+            const appContainer = document.getElementById('app-container');
+            
+            // Close modal if open
+            modal.classList.add('hidden');
+            
+            // Toggle sidebar and adjust main container
+            if (sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden');
+                appContainer.classList.add('guide-open');
+                showToast('📖 Testing guide opened! Follow along while you test.', 'info');
+            } else {
+                sidebar.classList.add('hidden');
+                appContainer.classList.remove('guide-open');
+                showToast('📖 Testing guide closed.', 'info');
+            }
+        }
+        
+        function showTestingGuide() {
+            document.getElementById('guide-modal').classList.remove('hidden');
+            document.getElementById('guide-sidebar').classList.add('hidden');
+        }
+        
+        function hideTestingGuide() {
+            document.getElementById('guide-modal').classList.add('hidden');
+        }
+
+        // --- FEEDBACK SYSTEM ---
+        
+        let currentRating = 0;
+        
+        function showFeedbackModal() {
+            document.getElementById('feedback-modal').classList.remove('hidden');
+        }
+        
+        function hideFeedbackModal() {
+            document.getElementById('feedback-modal').classList.add('hidden');
+            // Reset form
+            document.getElementById('feedback-form').reset();
+            currentRating = 0;
+            updateStarDisplay();
+        }
+        
+        function setRating(rating) {
+            currentRating = rating;
+            updateStarDisplay();
+        }
+        
+        function updateStarDisplay() {
+            const stars = document.querySelectorAll('.star');
+            stars.forEach((star, index) => {
+                if (index < currentRating) {
+                    star.classList.remove('text-gray-300');
+                    star.classList.add('text-yellow-400');
+                } else {
+                    star.classList.remove('text-yellow-400');
+                    star.classList.add('text-gray-300');
+                }
+            });
+        }
+        
+        async function submitFeedback(event) {
+            event.preventDefault();
+            
+            if (currentRating === 0) {
+                showToast('Please select a rating', 'warning');
+                return;
+            }
+            
+            const formData = new FormData(event.target);
+            const comment = formData.get('comment');
+            const features = formData.getAll('features');
+            
+            const feedbackData = {
+                rating: currentRating,
+                comment: comment,
+                features: features,
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                // Submit to backend API
+                const response = await fetch(`${backendUrl}/api/feedback`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(feedbackData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('Thank you for your feedback! 🙏', 'success');
+                    
+                    // Update user stats from backend
+                    await updateUserStats();
+                    
+                    hideFeedbackModal();
+                    
+                    // Track user session
+                    appState.feedbackSubmitted = true;
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                console.error('Feedback submission failed:', error);
+                showToast('Failed to submit feedback. Please try again.', 'error');
+            }
+        }
+        
+        // Feedback Viewer Modal
+        function showFeedbackViewer() {
+            // Create the feedback viewer modal dynamically
+            const existingViewer = document.getElementById('feedback-viewer-modal');
+            if (existingViewer) {
+                existingViewer.remove();
+            }
+            
+            const viewerModal = document.createElement('div');
+            viewerModal.id = 'feedback-viewer-modal';
+            viewerModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40';
+            viewerModal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-y-auto m-4 w-full">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">📋 User Feedback</h3>
+                        <button onclick="hideFeedbackViewer()" class="text-gray-500 hover:text-gray-700 text-xl">×</button>
+                    </div>
+                    <div id="feedback-list" class="space-y-3">
+                        <div class="text-center text-gray-500">Loading feedback...</div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(viewerModal);
+            loadFeedbackData();
+        }
+        
+        function hideFeedbackViewer() {
+            const viewer = document.getElementById('feedback-viewer-modal');
+            if (viewer) {
+                viewer.remove();
+            }
+        }
+        
+        async function loadFeedbackData() {
+            try {
+                const response = await fetch(`${backendUrl}/api/feedback`);
+                const result = await response.json();
+                
+                if (result.success && result.feedback.length > 0) {
+                    const feedbackHtml = result.feedback.map(feedback => `
+                        <div class="border border-gray-200 rounded-lg p-4 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-semibold">Rating:</span>
+                                    <span class="text-yellow-500">${'⭐'.repeat(feedback.rating)}</span>
+                                    <span class="text-gray-400">(${feedback.rating}/5)</span>
+                                </div>
+                                <span class="text-xs text-gray-500">
+                                    ${new Date(feedback.timestamp).toLocaleString()}
+                                </span>
+                            </div>
+                            
+                            ${feedback.comment ? `
+                                <div>
+                                    <span class="font-semibold">Comment:</span>
+                                    <p class="text-gray-700 mt-1">${feedback.comment}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${feedback.features && feedback.features.length > 0 ? `
+                                <div>
+                                    <span class="font-semibold">Liked Features:</span>
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                        ${feedback.features.map(feature => `
+                                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                                                ${feature.replace('_', ' ')}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('feedback-list').innerHTML = feedbackHtml;
+                } else {
+                    document.getElementById('feedback-list').innerHTML = 
+                        '<div class="text-center text-gray-500">No feedback submitted yet.</div>';
+                }
+                
+            } catch (error) {
+                console.error('Failed to load feedback:', error);
+                document.getElementById('feedback-list').innerHTML = 
+                    '<div class="text-center text-red-500">Failed to load feedback.</div>';
+            }
+        }
+        
+        async function updateUserStats() {
+            try {
+                // Fetch real stats from backend
+                const response = await fetch(`${backendUrl}/api/feedback/stats`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const { stats } = result;
+                    document.getElementById('user-stats').textContent = 
+                        `👥 ${stats.totalUsers} users tested • ⭐ ${stats.averageRating}/5 rating`;
+                } else {
+                    throw new Error(result.error);
+                }
+                    
+            } catch (error) {
+                console.error('Failed to update user stats:', error);
+                // Fallback to zero stats for fresh start
+                document.getElementById('user-stats').textContent = 
+                    `👥 0 users tested • ⭐ 0/5 rating`;
+            }
+        }
+        
+        // --- MOCK CONSTANTS & STATE ---
+
+        async function simulateDevWalletBridge(amount) {
+            // Simulate bridging with dev-controlled wallet (tokens already available on Arc)
+            // In real deployment, dev wallet would already have sufficient tokens
+            
+            showToast(`Dev wallet bridging ${amount} USDC to Arc...`, 'info');
+            
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Check if we're using dev wallet
+            const isDevWallet = currentAccount && currentAccount.toLowerCase() === DEV_WALLET_CONFIG.address.toLowerCase();
+            
+            if (isDevWallet && CONTRACT_ADDRESSES.USDC !== "0x0000000000000000000000000000000000000000") {
+                try {
+                    // Dev wallet should already have tokens, just simulate the bridge completion
+                    showToast(`Bridge simulation complete - dev wallet tokens ready on Arc`, 'success');
+                    return { transactionHash: '0xdev' + Date.now() };
+                } catch (error) {
+                    throw error;
+                }
+            } else {
+                // Fallback to demo simulation
+                showToast(`Demo bridge complete - ${amount} USDC simulated on Arc`, 'success');
+                return { transactionHash: '0xdemo' + Date.now() };
+            }
+        }
+
+        async function createEscrowContract(escrowData) {
+            if (!currentAccount) {
+                await initWeb3();
+                return;
+            }
+
+            try {
+                showToast('Creating escrow contract...', 'info');
+
+                const depositWei = web3.utils.toWei(escrowData.deposit.toString(), 'mwei');
+                const rentWei = web3.utils.toWei(escrowData.rent.toString(), 'mwei');
+
+                // First approve USDC for deposit
+                const approvalTx = await contracts.USDC.methods.approve(
+                    CONTRACT_ADDRESSES.RentCreditEscrow,
+                    depositWei
+                ).send({
+                    from: currentAccount,
+                    gas: 100000
+                });
+
+                showToast('Deposit approved, creating escrow...', 'info');
+
+                // Create escrow contract
+                const escrowTx = await contracts.RentCreditEscrow.methods.createEscrow(
+                    escrowData.landlord,
+                    currentAccount, // tenant
+                    depositWei,
+                    rentWei,
+                    escrowData.durationMonths,
+                    CONTRACT_ADDRESSES.USDC
+                ).send({
+                    from: currentAccount,
+                    gas: 300000
+                });
+
+                showToast('Escrow contract created successfully!', 'success');
+                return escrowTx;
+
+            } catch (error) {
+                console.error('Escrow creation failed:', error);
+                showToast('Escrow creation failed: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        async function payRentOnChain(escrowId) {
+            if (!currentAccount) {
+                await initWeb3();
+                return;
+            }
+
+            try {
+                showToast('Processing rent payment...', 'info');
+
+                const rentPayment = await contracts.RentCreditEscrow.methods.payRent(
+                    escrowId
+                ).send({
+                    from: currentAccount,
+                    gas: 200000
+                });
+
+                showToast('Rent payment successful!', 'success');
+                return rentPayment;
+
+            } catch (error) {
+                console.error('Rent payment failed:', error);
+                showToast('Rent payment failed: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // --- SCREEN RENDERING ---
+
+        // --- SCREEN RENDERING ---
+
+        function renderBridgeScreen() {
+            return `
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-bold text-gray-700 mb-6">1️⃣ Bridge USDC → Arc (CCTP)</h2>
+
+                    <!-- Arc Dev Wallet Status -->
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-lg font-semibold text-blue-700">Arc Dev Wallet Status</h3>
+                                <p class="text-sm text-gray-600">Address: ${truncateAddress(DEV_WALLET_ADDRESS)}</p>
+                                <p id="arc-balance" class="text-2xl font-extrabold text-blue-800 mt-2">
+                                    Balance: ${formatCurrency(appState.arcDevBalance)}
+                                </p>
+                                <p class="text-xs mt-1 text-blue-600">Auto-fills the balance after successful bridge.</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs font-medium ${currentAccount ? (currentAccount.toLowerCase() === DEV_WALLET_CONFIG.address.toLowerCase() ? 'text-red-600' : 'text-green-600') : 'text-gray-500'}">
+                                    ${currentAccount ? (currentAccount.toLowerCase() === DEV_WALLET_CONFIG.address.toLowerCase() ? '� DEV WALLET' : '�🟢 User Wallet') : '⚫ Demo Mode'}
+                                </div>
+                                <div class="text-xs ${CONTRACT_ADDRESSES.RentCreditEscrow !== '0x0000000000000000000000000000000000000000' ? 'text-green-600' : 'text-orange-500'}">
+                                    ${CONTRACT_ADDRESSES.RentCreditEscrow !== '0x0000000000000000000000000000000000000000' ? '🟢 Contracts Deployed' : '🟡 Contracts Pending'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="bridge-form" class="space-y-4 bg-gray-50 p-6 rounded-lg shadow-inner">
+                        <div class="flex flex-col">
+                            <label for="amount" class="text-sm font-medium text-gray-700 mb-1">Input Amount (USDC)</label>
+                            <input type="number" id="amount" name="amount" min="10" max="10000" value="1000" required
+                                class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-xl font-bold"
+                                placeholder="e.g., 1000">
+                            <p class="text-xs text-gray-500 mt-1">💡 Suggested: $1000 for rent deposits, $500 for small escrows</p>
+                        </div>
+
+                        <div class="flex flex-col">
+                            <label for="source-chain" class="text-sm font-medium text-gray-700 mb-1">Select Source Chain</label>
+                            <select id="source-chain" name="source-chain" disabled
+                                class="p-3 border border-gray-300 rounded-lg bg-white opacity-75">
+                                <option value="ethereum">Ethereum (Selected)</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" id="bridge-button" class="w-full py-3 btn-primary text-white font-bold text-lg rounded-xl shadow-lg transition duration-150">
+                            Bridge Now
+                        </button>
+                        <div id="bridge-status" class="text-center pt-2 min-h-[20px] text-sm text-gray-600"></div>
+                    </form>
+
+                    <button onclick="renderScreen('createEscrow')" class="w-full text-center py-2 text-blue-600 hover:text-blue-800 transition duration-150 font-medium border border-blue-200 rounded-lg">
+                        Go to Screen 2: Create Escrow
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderCreateEscrowScreen() {
+            return `
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-bold text-gray-700 mb-6">2️⃣ Create Rental Escrow</h2>
+
+                    <form id="escrow-form" class="space-y-4 bg-gray-50 p-6 rounded-lg shadow-inner">
+
+                        <!-- Landlord Address -->
+                        <div class="flex flex-col">
+                            <label for="landlord-address" class="text-sm font-medium text-gray-700 mb-1">Landlord Address</label>
+                            <input type="text" id="landlord-address" name="landlord-address" required
+                                class="p-3 border border-gray-300 rounded-lg"
+                                value="0xLandlordAddressABC1234567890" placeholder="0x...">
+                        </div>
+
+                        <!-- Amounts -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            ${renderInputField('deposit-amount', 'Security Deposit ($)', 'number', '', 'min="500" max="25000" placeholder="Usually 1-2x monthly rent (e.g., 2500)" required')}
+                            ${renderInputField('monthly-rent', 'Monthly Rent ($)', 'number', '', 'min="200" max="10000" placeholder="e.g., 1250, 875, 2100" required')}
+                            ${renderInputField('damage-threshold', 'Damage Threshold ($)', 'number', 500, 'min="50" required')}
+                        </div>
+
+                        <!-- Duration -->
+                        ${renderInputField('duration', 'Tenancy Duration (Months)', 'number', 12, 'min="1" required')}
+
+                        <div class="pt-4 space-y-3">
+                            <h3 class="text-md font-bold text-gray-700">Contract Requirements:</h3>
+                            ${renderCheckbox('require-inspection', 'Require 3rd-party Inspection', true)}
+                            ${renderCheckbox('require-tenant-confirmation', 'Require Tenant Confirmation (Manual Release)', false)}
+                        </div>
+
+                        <button type="submit" id="create-escrow-button" class="w-full py-3 bg-green-600 text-white font-bold text-lg rounded-xl shadow-lg hover:bg-green-700 transition duration-150">
+                            Create Escrow Contract
+                        </button>
+                    </form>
+
+                    <button onclick="renderScreen('dashboard')" class="w-full text-center py-2 text-blue-600 hover:text-blue-800 transition duration-150 font-medium border border-blue-200 rounded-lg">
+                        Go to Screen 3: Dashboard
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderInputField(id, label, type, value, attributes = '') {
+            return `
+                <div class="flex flex-col">
+                    <label for="${id}" class="text-sm font-medium text-gray-700 mb-1">${label}</label>
+                    <input type="${type}" id="${id}" name="${id}" value="${value}"
+                        class="p-3 border border-gray-300 rounded-lg text-lg"
+                        ${attributes}>
+                </div>
+            `;
+        }
+
+        function renderCheckbox(id, label, checked = false) {
+            return `
+                <div class="flex items-center">
+                    <input id="${id}" name="${id}" type="checkbox" ${checked ? 'checked' : ''}
+                        class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="${id}" class="ml-3 text-sm text-gray-700">${label}</label>
+                </div>
+            `;
+        }
+
+        function renderDashboardScreen() {
+            const activeEscrowsHtml = appState.activeEscrows.map(escrow => `
+                <div class="bg-white p-5 border border-gray-200 rounded-xl shadow-md space-y-3 card-enhanced">
+                    <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+                        <h3 class="text-xl font-bold text-blue-700">Rental Escrow #${escrow.id}</h3>
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full ${escrow.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}">
+                            ${escrow.status}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
+                        <div><strong class="text-gray-800">Landlord:</strong> ${truncateAddress(escrow.landlord)}</div>
+                        <div><strong class="text-gray-800">Deposit:</strong> ${formatCurrency(escrow.deposit)} ${escrow.depositReleased ? '(Released)' : '(In Escrow)'}</div>
+                        <div><strong class="text-gray-800">Monthly Rent:</strong> ${formatCurrency(escrow.rent)}</div>
+                        <div><strong class="text-gray-800">Damage Threshold:</strong> ${formatCurrency(escrow.damageThreshold)}</div>
+                        <div><strong class="text-gray-800">Duration:</strong> ${escrow.durationMonths} Months</div>
+                        <div id="escrow-payments-${escrow.id}"><strong class="text-gray-800">Payments:</strong> ${escrow.paidMonths} / ${escrow.durationMonths}</div>
+                    </div>
+
+                    <div class="pt-3 border-t border-gray-100">
+                        ${escrow.status === 'Active' ? `
+                            <p class="text-center text-sm font-medium text-gray-700 mb-3">Next Payment Due: ${escrow.nextPaymentDue}</p>
+                            ${appState.currentPerspective === 'tenant' ? `
+                                <button onclick="handleRentPayment(${escrow.id})" class="w-full py-2 mb-2 btn-success text-white font-semibold rounded-lg transition">
+                                    Pay Rent (${formatCurrency(escrow.rent)})
+                                </button>
+                            ` : ''}
+                            <div class="flex space-x-2">
+                                <button onclick="handleDispute(${escrow.id})" class="flex-1 py-2 text-sm bg-yellow-100 text-yellow-700 font-semibold rounded-lg hover:bg-yellow-200 transition">
+                                    Open Dispute
+                                </button>
+                                ${escrow.paidMonths >= escrow.durationMonths && !escrow.depositReleased ? `
+                                    <button onclick="handleReleaseDeposit(${escrow.id})" class="flex-1 py-2 text-sm bg-green-100 text-green-700 font-semibold rounded-lg hover:bg-green-200 transition">
+                                        ${appState.currentPerspective === 'landlord' ? 'Release Deposit' : 'Awaiting Release'}
+                                    </button>
+                                ` : `
+                                    <button disabled class="flex-1 py-2 text-sm bg-gray-100 text-gray-400 font-semibold rounded-lg cursor-not-allowed">
+                                        ${escrow.depositReleased ? 'Deposit Released' : 'Complete Lease First'}
+                                    </button>
+                                `}
+                            </div>
+                        ` : escrow.status === 'Deposit Released' ? `
+                            <div class="text-center">
+                                <p class="font-bold text-green-600 mb-2">✅ Lease Completed Successfully</p>
+                                <p class="text-sm text-gray-600">Deposit returned to tenant</p>
+                            </div>
+                        ` : `
+                            <p class="text-center font-bold text-gray-500">Tenancy Concluded</p>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+
+            return `
+                <div class="space-y-8">
+                    <h2 class="text-2xl font-bold text-gray-700">3️⃣ Dashboard & Active Management</h2>
+                    
+                    <!-- Perspective Switching Callout -->
+                    <div class="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-3 text-center">
+                        <p class="text-sm font-medium text-gray-700">
+                            💡 <strong>Try switching perspectives!</strong> 
+                            Currently viewing as <span class="font-bold ${appState.currentPerspective === 'tenant' ? 'text-blue-600' : 'text-green-600'}">${appState.currentPerspective.toUpperCase()}</span>
+                            - Switch to ${appState.currentPerspective === 'tenant' ? '🏠 Landlord' : '👤 Tenant'} view to see different actions
+                        </p>
+                    </div>
+
+                    <!-- Top Status Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Reputation Score Card -->
+                        <div class="bg-green-50 p-5 rounded-xl border border-green-200 text-center shadow-lg card-enhanced">
+                            <p class="text-sm font-medium text-green-700">Tenant Reputation Score</p>
+                            <p class="text-4xl font-extrabold text-green-600 mt-1">${appState.reputationScore}<span class="text-lg font-normal">/100</span></p>
+                            <p class="text-xs text-green-600 mt-1">+2 points per on-time payment</p>
+                        </div>
+                        <!-- Risk Buffer Vault Status -->
+                        <div class="bg-blue-50 p-5 rounded-xl border border-blue-200 text-center shadow-lg card-enhanced">
+                            <p class="text-sm font-medium text-blue-700">Safety Deposit Pool</p>
+                            <p class="text-4xl font-extrabold text-blue-600 mt-1">${formatCurrency(appState.riskBuffer)}</p>
+                            <p class="text-xs text-blue-600 mt-1">Shared insurance protecting landlords</p>
+                        </div>
+                        <!-- Arc Wallet Balance -->
+                        <div class="bg-blue-50 p-5 rounded-xl border border-blue-200 text-center shadow-lg card-enhanced">
+                            <p class="text-sm font-medium text-blue-700">Arc Dev Wallet Balance</p>
+                            <p class="text-2xl font-extrabold text-blue-800 mt-1">${formatCurrency(appState.arcDevBalance)}</p>
+                            <button onclick="renderScreen('bridge')" class="text-xs text-blue-500 hover:underline mt-1">Bridge More?</button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions Section (Landlord View) -->
+                    ${appState.currentPerspective === 'landlord' && appState.recentTransactions.length > 0 ? `
+                    <div class="space-y-4 pt-4">
+                        <h3 class="text-xl font-bold text-green-700 border-b border-green-200 pb-2">💰 Recent Payment Notifications</h3>
+                        <div class="space-y-3 max-h-[200px] overflow-y-auto">
+                            ${appState.recentTransactions.slice(0, 5).map(tx => `
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-3 shadow-sm">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            ${tx.type === 'rent_payment' ? `
+                                                <p class="font-semibold text-green-800">💰 Rent Payment Received</p>
+                                                <p class="text-sm text-green-600">${formatCurrency(tx.amount)} from ${truncateAddress(tx.from)}</p>
+                                            ` : tx.type === 'deposit_release' ? `
+                                                <p class="font-semibold text-blue-800">🔓 Deposit Released</p>
+                                                <p class="text-sm text-blue-600">${formatCurrency(tx.amount)} returned to ${tx.to}</p>
+                                            ` : tx.type === 'multisig_resolution' ? `
+                                                <p class="font-semibold text-purple-800">⚖️ Multisig Resolution</p>
+                                                <p class="text-sm text-purple-600">${formatCurrency(tx.amount)} released via 4/6 consensus</p>
+                                            ` : `
+                                                <p class="font-semibold text-green-800">Transaction</p>
+                                                <p class="text-sm text-green-600">${formatCurrency(tx.amount)}</p>
+                                            `}
+                                            <p class="text-xs text-gray-500">Escrow #${tx.escrowId} • ${tx.transactionHash ? 'TX: ' + tx.transactionHash.substring(0, 8) + '...' : 'Processing...'}</p>
+                                        </div>
+                                        <span class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full">
+                                            ${tx.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- Active Escrows Section -->
+                    <div class="space-y-4 pt-4">
+                        <h3 class="text-xl font-bold text-gray-700 border-b pb-2">Active Rental Escrows (${appState.activeEscrows.filter(e => e.status === 'Active').length})</h3>
+                        <div class="dashboard-container space-y-6 max-h-[500px] overflow-y-auto pr-2">
+                            ${activeEscrowsHtml.length > 0 ? activeEscrowsHtml : '<p class="text-gray-500 italic">No active escrows found. Create one now!</p>'}
+                        </div>
+                    </div>
+
+                    <button onclick="renderScreen('createEscrow')" class="w-full text-center py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 transition duration-150 font-medium rounded-lg">
+                        + Create New Escrow
+                    </button>
+                </div>
+            `;
+        }
+
+        // --- EVENT HANDLERS / SIMULATED API CALLS ---
+
+        function setupEventListeners() {
+            // Handle Bridge Form Submission
+            document.getElementById('content').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                if (appState.currentScreen === 'bridge') {
+                    handleBridgeSubmit(e.target);
+                } else if (appState.currentScreen === 'createEscrow') {
+                    handleEscrowSubmit(e.target);
+                }
+            });
+            
+            // Handle rent input to suggest deposit amount
+            document.getElementById('content').addEventListener('input', function(e) {
+                if (e.target.id === 'monthly-rent' && appState.currentScreen === 'createEscrow') {
+                    const rentAmount = parseFloat(e.target.value);
+                    const depositField = document.getElementById('deposit-amount');
+                    
+                    if (!isNaN(rentAmount) && rentAmount > 0 && !depositField.value) {
+                        // Suggest 2x monthly rent as deposit
+                        const suggestedDeposit = Math.round(rentAmount * 2);
+                        depositField.placeholder = `Suggested: $${suggestedDeposit} (2x rent)`;
+                    }
+                }
+            });
+        }
+
+        async function handleBridgeSubmit(form) {
+            const amount = parseFloat(form.elements['amount'].value);
+            const statusDiv = document.getElementById('bridge-status');
+            const bridgeButton = document.getElementById('bridge-button');
+
+            if (isNaN(amount) || amount <= 0) {
+                showToast("Please enter a valid amount.", 'error');
+                return;
+            }
+
+            bridgeButton.disabled = true;
+            statusDiv.innerHTML = '<span class="text-yellow-600">1. Initiate (Circle CCTP Bridge...)</span>';
+            showToast(`Initiating Circle CCTP bridge for ${formatCurrency(amount)} USDC.`, 'info');
+
+            try {
+                // Create user wallet if needed
+                if (!userWallet) {
+                    await createUserWallet('tenant');
+                }
+
+                // Bridge USDC via Circle CCTP
+                statusDiv.innerHTML = '<span class="text-orange-600">2. Pending (Circle CCTP Processing ⏳)</span>';
+                
+                const result = await bridgeUsdcViaCircle(amount);
+                
+                if (result.success) {
+                    // Wait for CCTP confirmation
+                    setTimeout(() => {
+                        appState.arcDevBalance += amount;
+                        renderScreen('bridge'); // Re-render to update balance
+
+                        statusDiv.innerHTML = '<span class="text-green-600 font-bold">3. Confirmed! Funds on Arc via CCTP.</span>';
+                        showToast(`CCTP bridge successful! ${formatCurrency(amount)} USDC arrived on Arc.`, 'success');
+
+                        bridgeButton.disabled = false;
+                        setTimeout(() => renderScreen('createEscrow'), 2000);
+                    }, 3000); // CCTP typically takes a few minutes, but demo shows faster
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                console.error('Circle bridge failed:', error);
+                statusDiv.innerHTML = '<span class="text-orange-600">Fallback: Demo Bridge Processing...</span>';
+                showToast('Circle bridge failed, using demo mode: ' + error.message, 'warning');
+                
+                // Fallback to demo mode
+                setTimeout(() => {
+                    appState.arcDevBalance += amount;
+                    renderScreen('bridge');
+
+                    statusDiv.innerHTML = '<span class="text-green-600 font-bold">3. Demo Complete! Funds simulated on Arc.</span>';
+                    showToast(`Demo bridge successful! ${formatCurrency(amount)} simulated on Arc.`, 'success');
+
+                    bridgeButton.disabled = false;
+                    setTimeout(() => renderScreen('createEscrow'), 2000);
+                }, 3000);
+            }
+        }
+
+        async function handleEscrowSubmit(form) {
+            const formData = new FormData(form);
+            const escrowData = {
+                id: appState.activeEscrows.length + 1,
+                landlord: formData.get('landlord-address'),
+                deposit: parseFloat(formData.get('deposit-amount')),
+                rent: parseFloat(formData.get('monthly-rent')),
+                durationMonths: parseInt(formData.get('duration')),
+                damageThreshold: parseFloat(formData.get('damage-threshold')),
+                inspectionRequired: !!formData.get('require-inspection'),
+                tenantConfirmation: !!formData.get('require-tenant-confirmation'),
+                paidMonths: 0,
+                status: 'Active',
+                nextPaymentDue: new Date().toLocaleDateString(),
+            };
+
+            if (appState.arcDevBalance < escrowData.deposit) {
+                showToast("Insufficient balance for deposit. Bridge more USDC.", 'error');
+                return;
+            }
+
+            try {
+                // Create tenant wallet if needed
+                if (!userWallet) {
+                    await createUserWallet('tenant');
+                }
+
+                // Create escrow contract via Circle Programmable Wallets
+                showToast('Creating escrow contract via Circle API...', 'info');
+                
+                const result = await executeSmartContract(
+                    ARC_CONFIG.contracts.escrow,
+                    'createEscrow',
+                    {
+                        landlord: escrowData.landlord,
+                        deposit: escrowData.deposit.toString(),
+                        monthlyRent: escrowData.rent.toString(),
+                        duration: escrowData.durationMonths.toString(),
+                        currency: 'USDC'
+                    }
+                );
+
+                if (result.success) {
+                    escrowData.contractAddress = result.contractAddress;
+                    escrowData.transactionHash = result.transactionHash;
+                    
+                    // Deduct deposit from balance
+                    appState.arcDevBalance -= escrowData.deposit;
+                    appState.activeEscrows.push(escrowData);
+                    
+                    // Update reputation and risk buffer for first-time users
+                    if (appState.reputationScore === 0) {
+                        appState.reputationScore = 75; // Starting reputation for creating first escrow
+                        appState.riskBuffer = escrowData.deposit * 0.1; // 10% of deposit goes to risk buffer
+                        showToast('🎉 Welcome! Starting reputation: 75/100', 'info');
+                    }
+                    
+                    showToast(`Escrow Contract #${escrowData.id} created! TX: ${result.transactionHash.substring(0, 8)}...`, 'success');
+                } else {
+                    throw new Error(result.error);
+                }
+
+                // Auto-advance to the dashboard
+                setTimeout(() => renderScreen('dashboard'), 1000);
+
+            } catch (error) {
+                console.error('Circle escrow creation failed:', error);
+                showToast('Circle escrow creation failed, using demo mode: ' + error.message, 'warning');
+                
+                // Fallback to demo mode
+                appState.arcDevBalance -= escrowData.deposit;
+                appState.activeEscrows.push(escrowData);
+                
+                // Update reputation and risk buffer for first-time users (fallback mode)
+                if (appState.reputationScore === 0) {
+                    appState.reputationScore = 75; // Starting reputation
+                    appState.riskBuffer = escrowData.deposit * 0.1; // 10% of deposit
+                    showToast('🎉 Welcome! Starting reputation: 75/100', 'info');
+                }
+                
+                showToast(`Demo Escrow Contract #${escrowData.id} created! Deposit sent.`, 'success');
+                setTimeout(() => renderScreen('dashboard'), 1000);
+            }
+        }
+
+        async function handleRentPayment(escrowId) {
+            const escrow = appState.activeEscrows.find(e => e.id === escrowId);
+
+            if (!escrow || escrow.paidMonths >= escrow.durationMonths) {
+                showToast("This tenancy is complete or invalid.", 'error');
+                return;
+            }
+
+            if (appState.arcDevBalance < escrow.rent) {
+                showToast("Insufficient balance on Arc. Bridge more USDC.", 'warning');
+                return;
+            }
+
+            try {
+                // Create tenant wallet if not exists
+                if (!userWallet) {
+                    await createUserWallet('tenant');
+                }
+
+                // Pay rent via Circle Programmable Wallets
+                showToast(`Paying rent of ${formatCurrency(escrow.rent)} via Circle...`, 'info');
+                
+                const result = await executeSmartContract(
+                    ARC_CONFIG.contracts.escrow,
+                    'payRent',
+                    {
+                        escrowId: escrowId,
+                        amount: escrow.rent.toString(),
+                        currency: 'USDC'
+                    }
+                );
+                
+                if (result.success) {
+                    // Update local state on success
+                    appState.arcDevBalance -= escrow.rent;
+                    escrow.paidMonths += 1;
+                    escrow.lastRentTxHash = result.transactionHash;
+                    
+                    // Update next payment date
+                    const currentDate = new Date();
+                    escrow.nextPaymentDue = new Date(currentDate.setMonth(currentDate.getMonth() + 1)).toLocaleDateString();
+
+                    // Increase reputation with successful payments
+                    if (appState.reputationScore < 100) {
+                        appState.reputationScore = Math.min(100, appState.reputationScore + 2); // +2 points per payment
+                    }
+
+                    // 🎬 DEMO: Add real-time landlord notification
+                    addPaymentNotification({
+                        type: 'rent_payment',
+                        amount: escrow.rent,
+                        from: userWallet?.address || 'Demo Tenant',
+                        to: escrow.landlord,
+                        escrowId: escrowId,
+                        transactionHash: result.transactionHash,
+                        status: 'confirmed'
+                    });
+
+                    if (escrow.paidMonths === escrow.durationMonths) {
+                        escrow.status = 'Complete';
+                        showToast(`Final Rent Payment Complete! TX: ${result.transactionHash.substring(0, 8)}...`, 'success');
+                    } else {
+                        showToast(`Rent Paid! TX: ${result.transactionHash.substring(0, 8)}... Payments: ${escrow.paidMonths}/${escrow.durationMonths}`, 'success');
+                    }
+
+                    renderScreen('dashboard');
+                } else {
+                    throw new Error(result.error);
+                }
+
+            } catch (error) {
+                console.error('Rent payment failed:', error);
+                showToast('Circle payment failed, using demo mode: ' + error.message, 'warning');
+                
+                // Fallback to demo mode
+                showToast(`Paying rent of ${formatCurrency(escrow.rent)} (Demo mode)`, 'info');
+                appState.arcDevBalance -= escrow.rent;
+
+                setTimeout(() => {
+                    escrow.paidMonths += 1;
+                    const currentDate = new Date();
+                    escrow.nextPaymentDue = new Date(currentDate.setMonth(currentDate.getMonth() + 1)).toLocaleDateString();
+
+                    // Increase reputation with successful payments (demo mode)
+                    if (appState.reputationScore < 100) {
+                        appState.reputationScore = Math.min(100, appState.reputationScore + 2);
+                    }
+
+                    if (escrow.paidMonths === escrow.durationMonths) {
+                        escrow.status = 'Complete';
+                        showToast(`Final Rent Payment Complete (Demo)!`, 'success');
+                    } else {
+                        showToast(`Rent Acknowledged (Demo)! Payments: ${escrow.paidMonths}/${escrow.durationMonths}`, 'success');
+                    }
+
+                    renderScreen('dashboard');
+                }, 2500);
+            }
+        }
+
+        async function handleReleaseDeposit(escrowId) {
+            const escrow = appState.activeEscrows.find(e => e.id === escrowId);
+            if (!escrow || escrow.paidMonths < escrow.durationMonths) {
+                showToast('Deposit can only be released after lease completion', 'warning');
+                return;
+            }
+
+            // Check perspective - only landlords can release deposits
+            if (appState.currentPerspective !== 'landlord') {
+                showToast('Switch to Landlord View to release deposits', 'info');
+                return;
+            }
+
+            try {
+                showToast('Processing deposit release...', 'info');
+                
+                // Release deposit via Circle Programmable Wallets
+                const result = await executeSmartContract(
+                    ARC_CONFIG.contracts.escrow,
+                    'releaseDeposit',
+                    {
+                        escrowId: escrowId,
+                        amount: escrow.deposit.toString(),
+                        currency: 'USDC'
+                    }
+                );
+
+                if (result.success) {
+                    escrow.status = 'Deposit Released';
+                    escrow.depositReleased = true;
+                    escrow.releaseTransactionHash = result.transactionHash;
+                    
+                    // Deposit goes back to tenant (not landlord)
+                    // In real implementation, this would transfer to tenant's wallet
+                    
+                    showToast(`✅ Deposit Released! TX: ${result.transactionHash.substring(0, 8)}... - Tenant receives ${formatCurrency(escrow.deposit)}`, 'success');
+                    
+                    // Notify tenant perspective
+                    addPaymentNotification({
+                        type: 'deposit_release',
+                        amount: escrow.deposit,
+                        from: 'Landlord',
+                        to: 'Tenant',
+                        escrowId: escrowId,
+                        transactionHash: result.transactionHash,
+                        status: 'confirmed'
+                    });
+                    
+                    renderScreen('dashboard');
+                } else {
+                    throw new Error(result.error);
+                }
+
+            } catch (error) {
+                console.error('Circle deposit release failed:', error);
+                showToast('Circle deposit release failed, using demo mode: ' + error.message, 'warning');
+                
+                // Fallback to demo mode
+                setTimeout(() => {
+                    escrow.status = 'Deposit Released';
+                    escrow.depositReleased = true;
+                    
+                    showToast(`✅ Deposit Released (Demo)! Tenant receives ${formatCurrency(escrow.deposit)}`, 'success');
+                    
+                    // Add notification for dual-perspective demo
+                    addPaymentNotification({
+                        type: 'deposit_release',
+                        amount: escrow.deposit,
+                        from: 'Landlord',
+                        to: 'Tenant',
+                        escrowId: escrowId,
+                        transactionHash: 'demo_' + Date.now(),
+                        status: 'confirmed'
+                    });
+                    
+                    renderScreen('dashboard');
+                }, 2000);
+            }
+        }
+
+        async function handleDispute(escrowId) {
+            const escrow = appState.activeEscrows.find(e => e.id === escrowId);
+            if (!escrow || escrow.status === 'Disputed') return;
+
+            // Initialize dispute with simulated multisig structure
+            escrow.dispute = {
+                status: 'Pending',
+                reason: '',
+                createdBy: appState.currentPerspective,
+                multisigVotes: {
+                    // 6 total signatories: 3 tenant-side, 3 landlord-side
+                    tenantSignatories: [
+                        { address: '0xTenant1...', voted: false, decision: null },
+                        { address: '0xTenant2...', voted: false, decision: null },
+                        { address: '0xTenant3...', voted: false, decision: null }
+                    ],
+                    landlordSignatories: [
+                        { address: '0xLandlord1...', voted: false, decision: null },
+                        { address: '0xLandlord2...', voted: false, decision: null },
+                        { address: '0xLandlord3...', voted: false, decision: null }
+                    ],
+                    requiredVotes: 4, // 4 of 6 consensus
+                    currentVotes: { release: 0, hold: 0 }
+                }
+            };
+
+            showDisputeModal(escrowId);
+        }
+
+        function showDisputeModal(escrowId) {
+            const escrow = appState.activeEscrows.find(e => e.id === escrowId);
+            const modal = document.createElement('div');
+            modal.id = 'dispute-modal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-70 flex items-center justify-center p-4';
+            
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 shadow-2xl">
+                    <h3 class="text-xl font-bold text-red-800 mb-4">⚖️ Dispute Resolution - Escrow #${escrowId}</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Dispute Reason:</label>
+                        <select id="dispute-reason" class="w-full p-2 border border-gray-300 rounded-lg">
+                            <option value="">Select reason...</option>
+                            <option value="property_damage">Property damage beyond normal wear</option>
+                            <option value="unpaid_utilities">Unpaid utilities or bills</option>
+                            <option value="lease_violation">Lease agreement violation</option>
+                            <option value="deposit_disagreement">Security deposit disagreement</option>
+                            <option value="early_termination">Early lease termination</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Additional Details:</label>
+                        <textarea id="dispute-details" rows="3" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Describe the issue..."></textarea>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <h4 class="font-bold text-blue-800 mb-2">🔐 Multisig Resolution Process (4 of 6 Consensus)</h4>
+                        <div class="grid grid-cols-2 gap-4 text-xs">
+                            <div>
+                                <p class="font-semibold text-green-700 mb-1">Tenant Signatories (3)</p>
+                                <div class="space-y-1">
+                                    <div>🟢 Tenant Primary</div>
+                                    <div>🟢 Tenant Legal Rep</div>
+                                    <div>🟢 Tenant Insurance</div>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-purple-700 mb-1">Landlord Signatories (3)</p>
+                                <div class="space-y-1">
+                                    <div>🟣 Landlord Primary</div>
+                                    <div>🟣 Property Manager</div>
+                                    <div>🟣 Landlord Insurance</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2 p-2 bg-yellow-100 rounded text-xs">
+                            <strong>Consensus Required:</strong> 4 of 6 signatories must agree to release or hold deposit
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="submitDispute(${escrowId})" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition font-medium">
+                            Submit Dispute & Start Multisig Process
+                        </button>
+                        <button onclick="closeDisputeModal()" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition font-medium">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        function submitDispute(escrowId) {
+            const escrow = appState.activeEscrows.find(e => e.id === escrowId);
+            const reason = document.getElementById('dispute-reason').value;
+            const details = document.getElementById('dispute-details').value;
+            
+            if (!reason) {
+                showToast('Please select a dispute reason', 'warning');
+                return;
+            }
+            
+            escrow.status = 'Disputed';
+            escrow.dispute.reason = reason;
+            escrow.dispute.details = details;
+            escrow.dispute.status = 'Under Review';
+            
+            closeDisputeModal();
+            
+            showToast(`🚨 Dispute submitted! Multisig voting process initiated for Escrow #${escrowId}`, 'warning');
+            
+            // Simulate multisig voting process
+            simulateMultisigVoting(escrowId);
+            
+            renderScreen('dashboard');
+        }
+        
+        function simulateMultisigVoting(escrowId) {
+            const escrow = appState.activeEscrows.find(e => e.id === escrowId);
+            
+            showToast('⏳ Multisig signatories notified. Voting in progress...', 'info');
+            
+            // Simulate votes coming in over time
+            setTimeout(() => {
+                // Simulate first 2 votes (release)
+                escrow.dispute.multisigVotes.tenantSignatories[0].voted = true;
+                escrow.dispute.multisigVotes.tenantSignatories[0].decision = 'release';
+                escrow.dispute.multisigVotes.landlordSignatories[0].voted = true;
+                escrow.dispute.multisigVotes.landlordSignatories[0].decision = 'release';
+                escrow.dispute.multisigVotes.currentVotes.release = 2;
+                
+                showToast('📊 2/6 votes received (Release: 2, Hold: 0)', 'info');
+            }, 3000);
+            
+            setTimeout(() => {
+                // Simulate next 2 votes (1 release, 1 hold)
+                escrow.dispute.multisigVotes.tenantSignatories[1].voted = true;
+                escrow.dispute.multisigVotes.tenantSignatories[1].decision = 'release';
+                escrow.dispute.multisigVotes.landlordSignatories[1].voted = true;
+                escrow.dispute.multisigVotes.landlordSignatories[1].decision = 'hold';
+                escrow.dispute.multisigVotes.currentVotes.release = 3;
+                escrow.dispute.multisigVotes.currentVotes.hold = 1;
+                
+                showToast('📊 4/6 votes received (Release: 3, Hold: 1)', 'info');
+            }, 6000);
+            
+            setTimeout(() => {
+                // Simulate final vote reaching consensus
+                escrow.dispute.multisigVotes.tenantSignatories[2].voted = true;
+                escrow.dispute.multisigVotes.tenantSignatories[2].decision = 'release';
+                escrow.dispute.multisigVotes.currentVotes.release = 4;
+                
+                showToast('✅ Consensus Reached! 4/6 votes for RELEASE. Executing deposit release...', 'success');
+                
+                // Auto-execute based on consensus
+                escrow.status = 'Deposit Released';
+                escrow.depositReleased = true;
+                escrow.dispute.status = 'Resolved - Release';
+                
+                addPaymentNotification({
+                    type: 'multisig_resolution',
+                    amount: escrow.deposit,
+                    from: 'Multisig Contract',
+                    to: 'Tenant',
+                    escrowId: escrowId,
+                    transactionHash: 'multisig_' + Date.now(),
+                    status: 'confirmed'
+                });
+                
+                renderScreen('dashboard');
+            }, 9000);
+        }
+        
+        function closeDisputeModal() {
+            const modal = document.getElementById('dispute-modal');
+            if (modal) modal.remove();
+        }
+
+        // --- INITIALIZATION ---
+        
+        // Make functions globally accessible for inline HTML calls BEFORE window.onload
+        window.renderScreen = renderScreen;
+        window.handleRentPayment = handleRentPayment;
+        window.handleReleaseDeposit = handleReleaseDeposit;
+        window.handleDispute = handleDispute;
+        window.initWeb3 = initWeb3;
+        window.truncateAddress = truncateAddress;
+        window.switchPerspective = switchPerspective;
+        window.toggleTestingGuide = toggleTestingGuide;
+        window.showTestingGuide = showTestingGuide;
+        window.hideTestingGuide = hideTestingGuide;
+        window.showFeedbackModal = showFeedbackModal;
+        window.hideFeedbackModal = hideFeedbackModal;
+        window.setRating = setRating;
+        window.submitFeedback = submitFeedback;
+        window.showFeedbackViewer = showFeedbackViewer;
+        window.hideFeedbackViewer = hideFeedbackViewer;
+        window.createUserWallet = createUserWallet;
+        window.submitDispute = submitDispute;
+        window.closeDisputeModal = closeDisputeModal;
+        
+        window.onload = () => {
+            console.log('Page loaded, initializing CrossRent with Circle Programmable Wallets...');
+            renderScreen(appState.currentScreen);
+            setupEventListeners();
+            
+            // Update user stats on page load
+            updateUserStats();
+            
+            // Auto-open testing guide for first-time users
+            const hasSeenGuide = localStorage.getItem('hasSeenTestingGuide');
+            if (!hasSeenGuide) {
+                setTimeout(() => {
+                    toggleTestingGuide();
+                    localStorage.setItem('hasSeenTestingGuide', 'true');
+                }, 1000);
+            }
+            
+            // Start Circle transaction status polling
+            startStatusPolling();
+            
+            // Initialize Circle wallet if returning user
+            const savedUserType = localStorage.getItem('userType');
+            if (savedUserType) {
+                console.log('Found saved user type:', savedUserType);
+                // Could attempt to reconnect to existing Circle wallet here
+            }
+        };
+
+        function setupEventListeners() {
+            // Circle API specific event listeners
+            console.log('Circle Programmable Wallets event listeners initialized');
+            
+            // Update wallet connect button to create Circle wallet
+            const connectBtn = document.getElementById('wallet-connect-btn');
+            if (connectBtn) {
+                connectBtn.onclick = async () => {
+                    try {
+                        await createUserWallet('tenant');
+                    } catch (error) {
+                        console.error('Circle wallet creation failed:', error);
+                        showToast('Circle wallet creation failed: ' + error.message, 'error');
+                    }
+                };
+            }
+            console.log('Event listeners initialized');
+        }
+
+    </script>
+</body>
+</html>
