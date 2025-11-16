@@ -77,7 +77,7 @@ backend/
 
 ## 🚀 Live Demo
 
-**Production URL**: https://crossrent-bua9ygutn-benpaymasters-projects.vercel.app
+**Production URL**: https://crossrent-arc.netlify.app
 **Local URL**: http://localhost:3004/ (when running locally)
 
 ## 🎬 Demo Video
@@ -218,7 +218,7 @@ The application includes realistic test scenarios:
 ## 🔗 Links
 
 - **Repository**: https://github.com/benpaymaster/arc-rentcredit
-- **Live Demo**: https://crossrent-bua9ygutn-benpaymasters-projects.vercel.app
+- **Live Demo**: https://crossrent-arc.netlify.app
 - **Demo Video**: https://www.loom.com/share/2788850d31d14b03bfc30631be419ae5
 - **Arc Network**: https://arc.net
 - **Circle**: https://circle.com
