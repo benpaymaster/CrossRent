@@ -354,6 +354,31 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
                 </p>
               </div>
 
+              {/* Cross-Chain Bridge Option */}
+              <div className="bg-gradient-to-r from-blue-500/20 to-cyan-600/20 border border-blue-400/30 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">🌉</div>
+                    <div>
+                      <h4 className="font-semibold text-blue-200 mb-1">Need USDC from another chain?</h4>
+                      <p className="text-blue-100/80 text-sm">
+                        Bridge USDC from Ethereum, Polygon, or other networks
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // This could open a modal with CrossChainBridge component
+                      toast('🌉 Bridge Kit integration ready! This would open the Circle Bridge Kit widget.');
+                    }}
+                    className="bg-blue-500/30 hover:bg-blue-500/50 text-blue-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Bridge USDC
+                  </button>
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={isProcessing || !amount || !propertyAddress}
