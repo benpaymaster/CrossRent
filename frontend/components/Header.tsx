@@ -17,7 +17,7 @@ export default function Header() {
                 alt="CrossRent Logo" 
                 className="w-10 h-10"
               />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-blue-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold text-gray-800">
                 CrossRent
               </h1>
             </div>
@@ -38,14 +38,11 @@ export default function Header() {
                   window.dispatchEvent(new CustomEvent('openWalletCreation'))
                   console.log('Connect Wallet clicked - redirecting to dashboard')
                 }}
-                className="bg-gradient-to-r from-emerald-500 to-green-500 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 shadow-2xl"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transform transition-all duration-200"
                 title="Connect Wallet (required to make payments)"
               >
-                🔗 Connect Wallet (Required)
+                🔗 Connect Wallet
               </button>
-              <p className="text-xs text-gray-600 mt-1 text-center">
-                Secure dev-controlled wallet created for you
-              </p>
             </nav>
 
             {/* Mobile Menu Button */}
@@ -80,9 +77,9 @@ export default function Header() {
                     window.dispatchEvent(new CustomEvent('openWalletCreation'))
                     console.log('Mobile Connect Wallet clicked')
                   }}
-                  className="bg-gradient-to-r from-emerald-500 to-green-500 text-white px-6 py-4 rounded-2xl font-bold w-full hover:shadow-xl hover:scale-105 transform transition-all duration-200"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold w-full hover:shadow-lg transform transition-all duration-200"
                 >
-                  🔗 Connect Wallet (Required)
+                  🔗 Connect Wallet
                 </button>
               </nav>
             </div>

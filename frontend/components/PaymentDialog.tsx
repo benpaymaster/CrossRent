@@ -376,23 +376,31 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
 
           {step === 'success' && (
             <div className="text-center">
-              <CheckCircle className="w-20 h-20 text-green-400 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-white mb-3">Payment Successful! 🎉</h3>
+              {/* Large Green Success Checkmark */}
+              <div className="relative mb-6">
+                <div className="w-32 h-32 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto animate-bounce">
+                  <CheckCircle className="w-20 h-20 text-white" />
+                </div>
+                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                  ✅ DEPOSIT RECEIVED
+                </div>
+              </div>
+              
+              <h3 className="text-3xl font-bold text-white mb-3">Payment Successful! 🎉</h3>
               <p className="text-white/70 mb-4 text-lg">
                 Your rent payment of {amount} USDC has been processed successfully
               </p>
               
-              {/* Success Motto */}
-              <div className="mb-6 animate-motto-glow">
-                <p className="text-purple-300 font-bold text-lg">
-                  Global Rent ✓ Universal Credit ✓ Global Reputation ✓
-                </p>
-                <p className="text-purple-200/80 text-sm italic mt-1">
-                  You're building your global rental reputation!
-                </p>
-              </div>
-              
-              <div className="bg-green-500/20 border border-green-400/30 rounded-xl p-6 mb-6">
+              {/* Enhanced Success Message */}
+              <div className="bg-gradient-to-r from-green-500/20 to-emerald-600/20 border border-green-400/30 rounded-xl p-6 mb-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="text-4xl mr-3">🏠</div>
+                  <div>
+                    <p className="text-green-300 font-bold text-xl">Deposit Received</p>
+                    <p className="text-green-200/80 text-sm">Landlord has been notified</p>
+                  </div>
+                </div>
+                
                 <div className="text-sm text-green-200 space-y-3">
                   <div className="flex justify-between">
                     <span>Amount:</span>
@@ -411,6 +419,16 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
                     <span className="font-semibold">{(parseFloat(amount || '0') * 0.1).toFixed(2)} USDC</span>
                   </div>
                 </div>
+              </div>
+              
+              {/* Success Motto */}
+              <div className="mb-6 animate-motto-glow">
+                <p className="text-green-300 font-bold text-lg">
+                  Global Rent ✓ Universal Credit ✓ Global Reputation ✓
+                </p>
+                <p className="text-green-200/80 text-sm italic mt-1">
+                  You're building your global rental reputation!
+                </p>
               </div>
               <div className="space-y-3">
                 <button

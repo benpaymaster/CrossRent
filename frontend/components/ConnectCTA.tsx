@@ -29,18 +29,23 @@ export default function ConnectCTA() {
   if (hasWallet) return null
 
   return (
-    <div className="fixed right-6 bottom-8 z-60">
-      <button
-        onClick={() => {
-          // Scroll to dashboard and trigger creation flow
-          document.getElementById('dashboard')?.scrollIntoView({ behavior: 'smooth' })
-          window.dispatchEvent(new CustomEvent('openWalletCreation'))
-        }}
-        className="bg-gradient-to-r from-emerald-500 to-green-500 text-white px-5 py-4 rounded-full font-bold shadow-2xl hover:scale-105 transform transition-all duration-200 flex items-center space-x-3 ring-4 ring-emerald-400/20"
-      >
-        <span className="text-xl">🔗</span>
-        <span className="text-sm">Connect Wallet</span>
-      </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/95 backdrop-blur-sm">
+      <div className="text-center max-w-md mx-auto px-6">
+        <button
+          onClick={() => {
+            // Scroll to dashboard and trigger creation flow
+            document.getElementById('dashboard')?.scrollIntoView({ behavior: 'smooth' })
+            window.dispatchEvent(new CustomEvent('openWalletCreation'))
+          }}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-lg mb-4 w-full"
+        >
+          <span className="text-2xl mr-3">🔗</span>
+          Connect Wallet
+        </button>
+        <p className="text-sm text-gray-600 italic">
+          Secure dev-controlled wallet created for you
+        </p>
+      </div>
     </div>
   )
 }
