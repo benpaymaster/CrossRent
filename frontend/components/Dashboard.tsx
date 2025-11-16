@@ -10,6 +10,7 @@ import PaymentEvidence from './PaymentEvidence'
 import CCTPDemo from './CCTPDemo'
 import { getProperties, type Property } from '../lib/properties'
 import { getAllPayments, getPaymentStats, type PaymentRecord } from '../lib/paymentTracking'
+import OnboardingModal from './OnboardingModal'
 
 type UserType = 'tenant' | 'landlord'
 
@@ -25,6 +26,7 @@ export default function Dashboard({ userType, setUserType, onRegisterPaymentCall
   const [showProperties, setShowProperties] = useState(false)
   const [showEvidence, setShowEvidence] = useState(false)
   const [showCCTPDemo, setShowCCTPDemo] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const [properties, setProperties] = useState<Property[]>([])
   
   // Payment tracking state
@@ -141,6 +143,17 @@ export default function Dashboard({ userType, setUserType, onRegisterPaymentCall
     // Load initial payment statistics
     updatePaymentStats()
   }, [onRegisterPaymentCallback, userType, setTotalPaid, setPaymentCount, setReputationScore])
+
+  // Onboarding effect for first-time users
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const seen = localStorage.getItem('crossrent_onboarding_seen');
+      if (!seen) {
+        setShowOnboarding(true);
+        localStorage.setItem('crossrent_onboarding_seen', 'true');
+      }
+    }
+  }, []);
 
   return (
     <main className="px-4 py-8 md:px-8" id="dashboard">
@@ -386,6 +399,8 @@ export default function Dashboard({ userType, setUserType, onRegisterPaymentCall
           </div>
         </div>
       )}
+
+      <OnboardingModal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
 
       <PropertiesModal 
         isOpen={showProperties}
