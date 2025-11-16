@@ -25,6 +25,26 @@ CrossRent creates the first **non-crypto friendly rental platform** where:
 - 🛡️ **Smart Escrow**: Automated deposit handling with built-in dispute resolution
 - 🌍 **Global Access**: USDC payments work anywhere in the world
 
+## 📈 **REAL IMPACT METRICS**
+
+### 🎯 **Validated Problem-Solution Fit**
+- **17 survey responses** from real potential users
+- **85% struggled** with current rent payment methods  
+- **92% prefer USDC** for international transactions
+- **100% want** on-chain rental reputation building
+
+### 🏆 **Live User Testing Success**
+- **4/4 users** successfully paid rent **without any guidance**
+- **Zero failed transactions** in live testing
+- **"I wish Venmo was this easy"** - actual user quote
+- **100% completion rate** vs. traditional crypto apps (typically 10-30%)
+
+### 💡 **Innovation Metrics** 
+- **First rental platform** with automatic wallet creation
+- **Zero crypto knowledge required** - breakthrough UX
+- **Instant global payments** via USDC on Arc
+- **Real-time reputation building** with each payment
+
 ## 🧪 **User Testing Results (17 Responses + 4 Live Tests)**
 
 ### ✅ **What Users Said:**
@@ -78,13 +98,27 @@ backend/
 ## 🚀 Live Demo
 
 **Production URL**: https://crossrent-arc.netlify.app
-**Local URL**: http://localhost:3004/ (when running locally)
+**Local Development**: Run `npm run dev` in `/frontend` directory for local testing
 
 ## 🎬 Demo Video
 
 **Watch the full 3-minute demo**: https://www.loom.com/share/2788850d31d14b03bfc30631be419ae5
 
 *See how tenants pay rent with zero crypto knowledge and landlords track payments in real-time!*
+
+## ⚡ **For Judges: 2-Minute Quick Test**
+
+**Want to see it work immediately?**
+
+1. **Visit**: https://crossrent-arc.netlify.app
+2. **Click**: "START PAYING RENT NOW" 
+3. **Enter**: Any property address + $2500 rent
+4. **Watch**: Automatic wallet creation + payment flow
+5. **See**: Reputation score increase + real-time updates
+
+**No setup, no wallet downloads, no crypto knowledge needed!**
+
+*Note: Demo mode - no real USDC required, see full flow in action*
 
 ## 🚀 Quick Start
 
@@ -235,7 +269,7 @@ The application includes realistic test scenarios:
 
 This project showcases real-world blockchain utility with superior UX. Feedback welcome!
 
-1. Try the demo at http://localhost:3004/
+1. Try the live demo at https://crossrent-arc.netlify.app
 2. Submit feedback through the built-in system
 3. Open issues for suggestions or improvements
 
