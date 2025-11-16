@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Star } from 'lucide-react'
+import { User, Star, Eye } from 'lucide-react'
 import PaymentForm from './PaymentForm'
 import PaymentHistory from './PaymentHistory'
 import FeedbackModal from './FeedbackModal'
 import PropertiesModal from './PropertiesModal'
+import PaymentEvidence from './PaymentEvidence'
 import { getProperties, type Property } from '../lib/properties'
 
 type UserType = 'tenant' | 'landlord'
@@ -20,6 +21,7 @@ export default function Dashboard({ userType, setUserType, onRegisterPaymentCall
   
   const [showFeedback, setShowFeedback] = useState(false)
   const [showProperties, setShowProperties] = useState(false)
+  const [showEvidence, setShowEvidence] = useState(false)
   const [properties, setProperties] = useState<Property[]>([])
   
   // Dynamic scores that update with payments
@@ -130,6 +132,13 @@ export default function Dashboard({ userType, setUserType, onRegisterPaymentCall
                   <span>Test Guide</span>
                 </button>
                 <button
+                  onClick={() => setShowEvidence(true)}
+                  className="bg-gradient-to-r from-emerald-500/20 to-green-600/20 border border-emerald-400/30 text-emerald-200 px-4 py-2 rounded-xl font-medium hover:bg-emerald-500/30 transition-all duration-300 flex items-center space-x-2"
+                >
+                  <Eye size={16} />
+                  <span>Evidence</span>
+                </button>
+                <button
                   onClick={() => setShowFeedback(true)}
                   className="bg-gradient-to-r from-purple-500/20 to-indigo-600/20 border border-purple-400/30 text-purple-200 px-4 py-2 rounded-xl font-medium hover:bg-purple-500/30 transition-all duration-300 flex items-center space-x-2"
                 >
@@ -228,6 +237,21 @@ export default function Dashboard({ userType, setUserType, onRegisterPaymentCall
         <FeedbackModal 
           isOpen={showFeedback} 
           onClose={() => setShowFeedback(false)} 
+        />
+      )}
+
+      {showProperties && (
+        <PropertiesModal 
+          isOpen={showProperties} 
+          onClose={() => setShowProperties(false)}
+          properties={properties}
+        />
+      )}
+
+      {showEvidence && (
+        <PaymentEvidence 
+          isOpen={showEvidence} 
+          onClose={() => setShowEvidence(false)} 
         />
       )}
 

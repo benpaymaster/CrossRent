@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { X, Wallet, CreditCard, CheckCircle, ArrowRight } from 'lucide-react'
 import { createWallet, executeTransfer, getWalletBalance, getAllWallets, type Wallet as WalletType, type Transfer } from '../lib/wallet'
 import { createEscrow, releaseRentPayment, getReputationScore } from '../lib/contracts'
+import { addProperty } from '../lib/properties'
+import { trackPayment } from '../lib/paymentTracking'
 import toast from 'react-hot-toast'
 
 interface PaymentDialogProps {
@@ -95,6 +97,25 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
       
       if (transferResult.success) {
         toast.success('💰 USDC payment sent!')
+        
+        // 📊 Track the payment for evidence/monitoring
+        const paymentRecord = trackPayment({
+          amount: parseFloat(amount),
+          propertyAddress,
+          landlordAddress: '0x1234567890123456789012345678901234567890',
+          tenantAddress: currentWallet.address,
+          txHash: transferResult.transactionId || 'mock_tx_' + Date.now(),
+          tenancyDuration: parseInt(duration)
+        })
+        
+        // 🏠 Add property to landlord's view
+        addProperty({
+          address: propertyAddress,
+          amount,
+          duration,
+          tenantAddress: currentWallet.address
+        })
+        
         setStep('success')
         
         // Call the callback to update dashboard scores
@@ -105,6 +126,8 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
         // ⭐ Step 3: Update reputation (on-time payment)
         await getReputationScore(currentWallet.address)
         toast.success('⭐ Reputation updated!')
+        
+        console.log('Payment tracked:', paymentRecord)
         
         // Refresh wallet balance
         await loadBalance(currentWallet.id)
@@ -138,7 +161,7 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
       />
       
       {/* Dialog */}
-      <div className="relative bg-gradient-to-br from-purple-950/95 via-slate-900/95 to-purple-950/95 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-gradient-to-br from-slate-950/95 via-gray-900/95 to-slate-950/95 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div>

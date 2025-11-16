@@ -149,6 +149,35 @@ export default function Guide({ userType, setUserType, onPaymentSuccess }: Guide
           </div>
         </div>
 
+        {/* MEGA PROMINENT Connect Wallet CTA */}
+        <div className="mb-12 text-center">
+          <div className="backdrop-blur-xl bg-gradient-to-r from-emerald-600/40 to-green-600/40 rounded-3xl border-4 border-emerald-400 shadow-2xl p-8 animate-pulse">
+            <div className="mb-4">
+              <div className="text-6xl mb-4">🔗</div>
+              <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
+                STEP 1: CONNECT WALLET
+              </h2>
+              <p className="text-2xl text-emerald-200 font-bold mb-6">
+                ⚠️ YOU MUST DO THIS FIRST TO PAY RENT ⚠️
+              </p>
+            </div>
+            
+            <button 
+              onClick={() => {
+                setUserType('tenant')
+                setShowPaymentDialog(true)
+              }}
+              className="bg-gradient-to-r from-emerald-400 to-green-400 text-black px-12 py-6 rounded-3xl font-black text-2xl hover:shadow-2xl hover:scale-110 transform transition-all duration-200 shadow-emerald-400/50 animate-bounce border-4 border-white"
+            >
+              ⚡ CLICK HERE TO CONNECT WALLET ⚡
+            </button>
+            
+            <p className="text-emerald-200 mt-4 text-lg font-medium">
+              👆 Click this button to start paying rent with crypto
+            </p>
+          </div>
+        </div>
+
         {/* Prominent Wallet Connection Banner */}
         <div className="backdrop-blur-xl bg-gradient-to-r from-green-600/20 to-emerald-600/20 rounded-3xl border border-green-400/50 shadow-2xl p-6 mb-12 animate-pulse">
           <div className="flex items-center justify-center space-x-6">
