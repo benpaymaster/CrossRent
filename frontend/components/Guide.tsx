@@ -20,13 +20,20 @@ export default function Guide({ userType, setUserType, onPaymentSuccess }: Guide
     // Scroll to dashboard and trigger helpful actions for each step
     document.getElementById('dashboard')?.scrollIntoView({ behavior: 'smooth' })
 
-    // Fire DOM events for PaymentForm to react to (wallet creation, focusing inputs)
+    // Fire DOM events for PaymentForm to react to (focusing inputs)
     if (index === 0) {
-      window.dispatchEvent(new CustomEvent('openWalletCreation'))
-    } else if (index === 1) {
       window.dispatchEvent(new CustomEvent('focusProperty'))
-    } else if (index === 2) {
+    } else if (index === 1) {
       window.dispatchEvent(new CustomEvent('focusAmount'))
+    } else if (index === 2) {
+      // Focus on pay button for payment step
+      setTimeout(() => {
+        const payButton = document.querySelector('button[type="submit"]') as HTMLButtonElement
+        if (payButton) {
+          payButton.focus()
+          payButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 500)
     }
 
     // If user selected landlord step, switch view
@@ -37,27 +44,27 @@ export default function Guide({ userType, setUserType, onPaymentSuccess }: Guide
 
   const tenantSteps = [
     {
-      title: '🔗 Connect Wallet (Required First!)',
-      description: 'Connect your crypto wallet with USDC balance - this is mandatory to proceed',
-      details: 'Use MetaMask, WalletConnect, or any supported wallet to connect. Ensure you have USDC tokens for rent payments. Without a connected wallet, you cannot proceed to the next steps.'
-    },
-    {
-      title: 'Enter Property Details',
+      title: '� Enter Property Details',
       description: 'Add your rental property address and tenancy terms',
       details: 'Input the exact property address and select your tenancy duration. This information will be stored securely on the blockchain.'
     },
     {
-      title: 'Set Payment Amount',
+      title: '💰 Set Payment Amount',
       description: 'Specify monthly rent amount in USDC',
       details: 'Enter the exact rent amount as agreed in your tenancy. All payments are processed in USDC stablecoin for price stability.'
     },
     {
-      title: 'Pay to Escrow',
-      description: 'Your payment goes to secure escrow automatically',
-      details: 'Funds are held in smart contract escrow and released to landlord based on tenancy terms. This protects both parties.'
+      title: '🏦 Pay Rent Instantly',
+      description: 'Your payment is processed automatically with secure wallet creation',
+      details: 'We create a secure wallet for you behind the scenes and process your USDC payment. Funds are held in smart contract escrow and released to landlord based on tenancy terms.'
     },
     {
-      title: 'Track & Manage',
+      title: '⭐ Build Credit Score',
+      description: 'Every payment improves your global rental reputation',
+      details: 'On-time payments boost your reputation score, making it easier to rent anywhere in the world.'
+    },
+    {
+      title: '� Track & Manage',
       description: 'Monitor payment history and upcoming due dates',
       details: 'View all transactions, payment confirmations, and manage your rental payments from one dashboard.'
     }
@@ -65,19 +72,14 @@ export default function Guide({ userType, setUserType, onPaymentSuccess }: Guide
 
   const landlordSteps = [
     {
-      title: '🔗 Connect Wallet (Required First!)',
-      description: 'Set up your landlord profile and connect wallet - this is mandatory to proceed',
-      details: 'Register as a property owner and connect your wallet to receive USDC rent payments securely. Without a connected wallet, you cannot receive payments or manage properties.'
-    },
-    {
-      title: 'Add Properties',
+      title: '🏠 Add Properties',
       description: 'List your rental properties on the platform',
-      details: 'Add property details, rental amounts, and tenancy terms. Each property gets a unique smart contract.'
+      details: 'Add property details, rental amounts, and tenancy terms. Each property gets a unique smart contract for secure escrow.'
     },
     {
-      title: 'Invite Tenants',
+      title: '👥 Invite Tenants',
       description: 'Send secure invitations to your tenants',
-      details: 'Share property-specific payment links with tenants. They can start paying rent immediately after connecting their wallet.'
+      details: 'Share property-specific payment links with tenants. They can start paying rent immediately with automatic wallet setup.'
     },
     {
       title: 'Monitor Payments',
@@ -96,6 +98,36 @@ export default function Guide({ userType, setUserType, onPaymentSuccess }: Guide
   return (
     <section className="px-4 py-16 md:px-8" id="guide">
       <div className="max-w-7xl mx-auto">
+        
+        {/* HERO CTA - FIRST THING RENTERS SEE */}
+        <div className="mb-16 text-center">
+          <div className="backdrop-blur-xl bg-gradient-to-r from-purple-600/40 to-blue-600/40 rounded-3xl border-4 border-purple-400 shadow-2xl p-8 animate-pulse">
+            <div className="mb-4">
+              <div className="text-6xl mb-4">💳</div>
+              <h1 className="text-5xl md:text-6xl font-black text-white mb-4">
+                START PAYING RENT
+              </h1>
+              <p className="text-3xl text-purple-200 font-bold mb-6">
+                ⚡ SIMPLE 3-STEP PROCESS ⚡
+              </p>
+            </div>
+            
+            <button 
+              onClick={() => {
+                setUserType('tenant')
+                setShowPaymentDialog(true)
+              }}
+              className="bg-gradient-to-r from-purple-400 to-blue-400 text-white px-16 py-8 rounded-3xl font-black text-3xl hover:shadow-2xl hover:scale-110 transform transition-all duration-200 shadow-purple-400/50 animate-bounce border-4 border-white"
+            >
+              🚀 START PAYING RENT NOW 🚀
+            </button>
+            
+            <p className="text-purple-200 mt-6 text-xl font-medium">
+              👆 Click to begin - digital account created automatically for you
+            </p>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-6">
@@ -145,57 +177,6 @@ export default function Guide({ userType, setUserType, onPaymentSuccess }: Guide
                 <User size={18} />
                 <span>For Landlords</span>
               </button>
-            </div>
-          </div>
-        </div>
-
-        {/* MEGA PROMINENT Connect Wallet CTA */}
-        <div className="mb-12 text-center">
-          <div className="backdrop-blur-xl bg-gradient-to-r from-emerald-600/40 to-green-600/40 rounded-3xl border-4 border-emerald-400 shadow-2xl p-8 animate-pulse">
-            <div className="mb-4">
-              <div className="text-6xl mb-4">🔗</div>
-              <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
-                STEP 1: CONNECT WALLET
-              </h2>
-              <p className="text-2xl text-emerald-200 font-bold mb-6">
-                ⚠️ YOU MUST DO THIS FIRST TO PAY RENT ⚠️
-              </p>
-            </div>
-            
-            <button 
-              onClick={() => {
-                setUserType('tenant')
-                setShowPaymentDialog(true)
-              }}
-              className="bg-gradient-to-r from-emerald-400 to-green-400 text-black px-12 py-6 rounded-3xl font-black text-2xl hover:shadow-2xl hover:scale-110 transform transition-all duration-200 shadow-emerald-400/50 animate-bounce border-4 border-white"
-            >
-              ⚡ CLICK HERE TO CONNECT WALLET ⚡
-            </button>
-            
-            <p className="text-emerald-200 mt-4 text-lg font-medium">
-              👆 Click this button to start paying rent with crypto
-            </p>
-          </div>
-        </div>
-
-        {/* Prominent Wallet Connection Banner */}
-        <div className="backdrop-blur-xl bg-gradient-to-r from-green-600/20 to-emerald-600/20 rounded-3xl border border-green-400/50 shadow-2xl p-6 mb-12 animate-pulse">
-          <div className="flex items-center justify-center space-x-6">
-            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-              🔗
-            </div>
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-green-200 mb-2">
-                First Step: Connect Your Crypto Wallet
-              </h3>
-              <p className="text-green-100/80 text-lg mb-2">
-                You'll need a wallet like MetaMask with USDC tokens. Click "Get Started" below to begin!
-              </p>
-              <div className="animate-fade-motto">
-                <p className="text-sm text-emerald-200/90 font-medium italic">
-                  Global Rent • Universal Credit • Global Reputation
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -266,9 +247,9 @@ export default function Guide({ userType, setUserType, onPaymentSuccess }: Guide
                 setUserType('tenant')
                 setShowPaymentDialog(true)
               }}
-              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-2xl font-semibold hover:shadow-lg hover:shadow-green-500/25 transition-all duration-300 flex items-center justify-center space-x-2"
+              className="w-full bg-gradient-to-r from-purple-500 to-blue-600 text-white py-4 rounded-2xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 flex items-center justify-center space-x-2"
             >
-              <span>🔗 Connect Wallet & Get Started</span>
+              <span>� Start Paying Rent Now</span>
               <ArrowRight size={20} />
             </button>
           </div>

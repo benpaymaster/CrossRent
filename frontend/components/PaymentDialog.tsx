@@ -223,21 +223,21 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
         <div className="p-6">
           {step === 'wallet' && (
             <div className="text-center">
-              <div className="w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-6 animate-pulse">
-                🔗
+              <div className="w-24 h-24 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-6 animate-pulse">
+                🏦
               </div>
-              <h3 className="text-3xl font-bold text-white mb-4">Step 1: Connect Your Crypto Wallet</h3>
-              <p className="text-green-100 mb-6 text-xl leading-relaxed">
-                You need a crypto wallet with USDC tokens to pay rent. Don't worry - we'll create one for you instantly!
+              <h3 className="text-3xl font-bold text-white mb-4">Step 1: Set Up Your Digital Payment Account</h3>
+              <p className="text-purple-100 mb-6 text-xl leading-relaxed">
+                We'll create a secure digital account for you to pay rent with USDC (digital dollars). It takes just seconds!
               </p>
               
-              <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-400/30 rounded-2xl p-4 mb-6">
+              <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-2xl p-4 mb-6">
                 <div className="flex items-center space-x-3">
                   <div className="text-2xl">💡</div>
                   <div className="text-left">
-                    <h4 className="font-semibold text-yellow-200 mb-1">Why do I need a wallet?</h4>
-                    <p className="text-yellow-100/80 text-sm">
-                      Crypto wallets let you securely store and send USDC (digital dollars) for rent payments. It's like having a digital bank account!
+                    <h4 className="font-semibold text-blue-200 mb-1">Why a digital account?</h4>
+                    <p className="text-blue-100/80 text-sm">
+                      Digital accounts let you securely store and send USDC (digital dollars) for rent payments. It's like having an instant, global bank account!
                     </p>
                   </div>
                 </div>
@@ -263,17 +263,17 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
               <button
                 onClick={handleCreateWallet}
                 disabled={isProcessing}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-green-500/25 transition-all duration-300 disabled:opacity-50 flex items-center space-x-3 mx-auto"
+                className="bg-gradient-to-r from-purple-500 to-blue-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 disabled:opacity-50 flex items-center space-x-3 mx-auto"
               >
                 {isProcessing ? (
                   <>
                     <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Creating Your Wallet...</span>
+                    <span>Creating Your Account...</span>
                   </>
                 ) : (
                   <>
                     <Wallet size={24} />
-                    <span>🚀 Create My Crypto Wallet</span>
+                    <span>🏦 Create My Digital Account</span>
                   </>
                 )}
               </button>

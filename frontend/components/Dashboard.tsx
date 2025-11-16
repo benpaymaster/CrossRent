@@ -8,6 +8,7 @@ import FeedbackModal from './FeedbackModal'
 import PropertiesModal from './PropertiesModal'
 import PaymentEvidence from './PaymentEvidence'
 import { getProperties, type Property } from '../lib/properties'
+import { getAllPayments, getPaymentStats, type PaymentRecord } from '../lib/paymentTracking'
 
 type UserType = 'tenant' | 'landlord'
 
@@ -24,28 +25,98 @@ export default function Dashboard({ userType, setUserType, onRegisterPaymentCall
   const [showEvidence, setShowEvidence] = useState(false)
   const [properties, setProperties] = useState<Property[]>([])
   
+  // Payment tracking state
+  const [activeTenants, setActiveTenants] = useState(0)
+  const [paymentStats, setPaymentStats] = useState({
+    totalPayments: 0,
+    totalAmount: 0,
+    uniqueTenants: 0,
+    uniqueProperties: 0
+  })
+  
   // Dynamic scores that update with payments
-  const [reputationScore, setReputationScore] = useState(() => ({
-    tenant: 750,
-    landlord: 880
-  }))
+  const [reputationScore, setReputationScore] = useState(() => {
+    // Check if we're in browser environment
+    if (typeof window !== 'undefined') {
+      // Try to load from localStorage first
+      const saved = localStorage.getItem('crossrent-reputation-scores')
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch (e) {
+          console.log('Failed to parse saved reputation scores')
+        }
+      }
+    }
+    // Default values
+    return {
+      tenant: 750,
+      landlord: 880
+    }
+  })
   const [totalPaid, setTotalPaid] = useState(0)
   const [paymentCount, setPaymentCount] = useState(0)
 
+  // Function to update payment statistics
+  const updatePaymentStats = () => {
+    const allPayments = getAllPayments()
+    const stats = getPaymentStats()
+    
+    setPaymentStats(stats)
+    setActiveTenants(stats.uniqueTenants)
+    
+    console.log('📊 Payment stats updated:', {
+      totalPayments: stats.totalPayments,
+      uniqueTenants: stats.uniqueTenants,
+      totalAmount: stats.totalAmount
+    })
+  }
+
   // Handle successful payment to update scores
   const handlePaymentSuccess = (amount: number) => {
-    setTotalPaid(prev => prev + amount)
-    setPaymentCount(prev => prev + 1)
+    console.log('🎯 Payment success callback triggered:', { amount, userType })
+    
+    setTotalPaid(prev => {
+      const newTotal = prev + amount
+      console.log('💰 Total paid updated:', { prev, amount, newTotal })
+      return newTotal
+    })
+    
+    setPaymentCount(prev => {
+      const newCount = prev + 1
+      console.log('📊 Payment count updated:', { prev, newCount })
+      return newCount
+    })
     
     // Increase reputation score based on payment
     const scoreIncrease = Math.min(20, Math.floor(amount / 100 * 2)) // Up to +20 points
-    setReputationScore(prev => ({
-      ...prev,
-      [userType]: Math.min(1000, prev[userType] + scoreIncrease)
-    }))
+    setReputationScore(prev => {
+      const newScore = Math.min(1000, prev[userType] + scoreIncrease)
+      const newState = {
+        ...prev,
+        [userType]: newScore
+      }
+      console.log('⭐ Reputation score updated:', { 
+        userType, 
+        prevScore: prev[userType], 
+        scoreIncrease, 
+        newScore,
+        fullState: newState
+      })
+      
+      // Persist to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('crossrent-reputation-scores', JSON.stringify(newState))
+      }
+      
+      return newState
+    })
     
     // Refresh properties list
     setProperties(getProperties())
+    
+    // Update payment statistics for landlord dashboard
+    updatePaymentStats()
   }
 
   // Register the payment callback with parent component
@@ -56,6 +127,9 @@ export default function Dashboard({ userType, setUserType, onRegisterPaymentCall
     
     // Load properties on mount
     setProperties(getProperties())
+    
+    // Load initial payment statistics
+    updatePaymentStats()
   }, [onRegisterPaymentCallback, userType, setTotalPaid, setPaymentCount, setReputationScore])
 
   return (
@@ -167,14 +241,14 @@ export default function Dashboard({ userType, setUserType, onRegisterPaymentCall
         </div>
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mt-8">
+        <div className="grid md:grid-cols-4 gap-6 mt-8">
           {/* Reputation Score */}
           <div className="bg-gradient-to-br from-slate-950/95 via-gray-900/95 to-slate-950/95 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-white">Reputation Score</h3>
               <Star className="w-5 h-5 text-yellow-400 fill-current" />
             </div>
-            <div className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+            <div className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent transition-all duration-500" key={reputationScore[userType]}>
               {reputationScore[userType]}/1000
             </div>
             <div className="flex items-center mt-2">
@@ -196,6 +270,25 @@ export default function Dashboard({ userType, setUserType, onRegisterPaymentCall
               </div>
             )}
           </div>
+
+          {/* Active Tenants (Landlord Only) */}
+          {userType === 'landlord' && (
+            <div className="bg-gradient-to-br from-slate-950/95 via-gray-900/95 to-slate-950/95 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-6">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-white">Active Tenants</h3>
+                <User className="w-5 h-5 text-green-400" />
+              </div>
+              <div className="text-3xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent transition-all duration-500">
+                {activeTenants}
+              </div>
+              <p className="text-sm text-green-200 mt-1">
+                Paying tenants
+              </p>
+              <div className="mt-3 text-xs text-green-400/80">
+                ${paymentStats.totalAmount.toLocaleString()} total received
+              </div>
+            </div>
+          )}
           
           {/* Vault Protection */}
           <div className="bg-gradient-to-br from-slate-950/95 via-gray-900/95 to-slate-950/95 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-6">
