@@ -3,7 +3,27 @@
 import { useState, useRef, useEffect } from 'react'
 import { X, Wallet, CreditCard, CheckCircle, ArrowRight } from 'lucide-react'
 import { createWallet, executeTransfer, getWalletBalance, getAllWallets, type Wallet as WalletType, type Transfer } from '../lib/wallet'
-import { createEscrow, releaseRentPayment, getReputationScore } from '../lib/contracts'
+import { openBridgeWidget } from '../lib/bridgeService'
+import { BridgeKit } from '@circle-fin/bridge-kit'
+
+// Demo helper: reset wallet balance
+function resetWalletBalance(wallet: WalletType | null) {
+  if (!wallet) return
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('crossrent_wallets')
+    let wallets = []
+    if (stored) {
+      try { wallets = JSON.parse(stored) } catch (e) {}
+    }
+    const idx = wallets.findIndex((w: any) => w.id === wallet.id)
+    if (idx !== -1) {
+      wallets[idx].balance = '1000.00'
+      localStorage.setItem('crossrent_wallets', JSON.stringify(wallets))
+      window.dispatchEvent(new CustomEvent('walletsUpdated'))
+    }
+  }
+}
+import { createEscrow, releaseRentPayment, getReputationScore, updateReputationScore } from '../lib/contracts'
 import { addProperty } from '../lib/properties'
 import { trackPayment } from '../lib/paymentTracking'
 import toast from 'react-hot-toast'
@@ -15,7 +35,43 @@ interface PaymentDialogProps {
 }
 
 export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: PaymentDialogProps) {
+  // Listen for escrow events (example: using ethers.js)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let provider, contract;
+    async function setupListeners() {
+      try {
+        // Replace with your contract address and ABI
+        const escrowAddress = process.env.NEXT_PUBLIC_MULTISIG_ESCROW_ADDRESS;
+        const escrowAbi = [
+          "event EscrowCreated(uint256 indexed escrowId, address[] signatories, uint256 quorum, uint256 amount)",
+          "event DepositReleased(uint256 indexed escrowId)"
+        ];
+        // Use ethers.js provider (Metamask or default)
+        const { ethers } = await import("ethers");
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        contract = new ethers.Contract(escrowAddress, escrowAbi, provider);
+        contract.on("EscrowCreated", (escrowId, signatories, quorum, amount) => {
+          toast.success(`Escrow Created! ID: ${escrowId}, Quorum: ${quorum}`);
+        });
+        contract.on("DepositReleased", (escrowId) => {
+          toast.success(`Deposit Released for Escrow ID: ${escrowId}`);
+        });
+      } catch (err) {
+        // Ignore if not configured
+      }
+    }
+    setupListeners();
+    return () => {
+      if (contract) {
+        contract.removeAllListeners();
+      }
+    };
+  }, []);
+  // Toggle for dev vs prod payment logic
+  const isDev = !process.env.NEXT_PUBLIC_CIRCLE_API_KEY
   const [amount, setAmount] = useState('')
+  const [token, setToken] = useState<'USDC' | 'EURC'>('USDC')
   const [duration, setDuration] = useState('3')
   const [propertyAddress, setPropertyAddress] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
@@ -25,6 +81,9 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
 
   const propertyRef = useRef<HTMLInputElement | null>(null)
   const amountRef = useRef<HTMLInputElement | null>(null)
+  // New state for chain selection
+  const [sourceChain, setSourceChain] = useState('polygon')
+  const [destinationChain, setDestinationChain] = useState('polygon')
 
   // Load wallet on mount
   useEffect(() => {
@@ -71,69 +130,74 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
     try {
       // 🏠 Step 1: Create escrow on smart contract
       const escrowResult = await createEscrow(
-        '0x1234567890123456789012345678901234567890', // Mock landlord
+        '0x1234567890123456789012345678901234567890',
         amount,
-        (parseFloat(amount) * 1.1).toFixed(2), // Include 10% safety contribution
+        (parseFloat(amount) * 1.1).toFixed(2),
         propertyAddress,
         parseInt(duration)
       )
-      
       if (!escrowResult.success) {
         throw new Error(escrowResult.error || 'Escrow creation failed')
       }
-      
       toast.success('🏠 Escrow created successfully!')
-      
-      // 💰 Step 2: Execute USDC transfer
-      const transfer: Transfer = {
-        amount,
-        destinationAddress: '0x1234567890123456789012345678901234567890',
-        tokenId: 'USDC',
-        sourceChain: 'polygon',
-        destinationChain: 'polygon'
+
+      let transferResult
+      if (isDev) {
+        // Use mock wallet logic for dev/demo
+        transferResult = await executeTransfer(currentWallet.id, {
+          amount,
+          destinationAddress: '0x1234567890123456789012345678901234567890',
+          tokenId: token,
+          sourceChain,
+          destinationChain
+        })
+        if (!transferResult.success) {
+          throw new Error(transferResult.error || 'Mock transfer failed')
+        }
+      } else {
+        // Use Bridge Kit for real payments via openBridgeWidget
+        try {
+          transferResult = await openBridgeWidget({
+            amount,
+            sourceToken: token,
+            destinationToken: token,
+            sourceChain,
+            destinationChain,
+            destinationAddress: '0x1234567890123456789012345678901234567890',
+          })
+        } catch (err) {
+          throw new Error('BridgeKit transfer failed: ' + (err?.message || err))
+        }
+        if (!(transferResult && (transferResult.status === 'complete' || transferResult.success))) {
+          throw new Error(transferResult?.error || 'CCTP transfer failed')
+        }
       }
 
-      const transferResult = await executeTransfer(currentWallet.id, transfer)
-      
-      if (transferResult.success) {
-        toast.success('💰 USDC payment sent!')
-        
-        // 📊 Track the payment for evidence/monitoring
-        const paymentRecord = trackPayment({
-          amount: parseFloat(amount),
-          propertyAddress,
-          landlordAddress: '0x1234567890123456789012345678901234567890',
-          tenantAddress: currentWallet.address,
-          txHash: transferResult.transactionId || 'mock_tx_' + Date.now(),
-          tenancyDuration: parseInt(duration)
-        })
-        
-        // 🏠 Add property to landlord's view
-        addProperty({
-          address: propertyAddress,
-          amount,
-          duration,
-          tenantAddress: currentWallet.address
-        })
-        
-        setStep('success')
-        
-        // Call the callback to update dashboard scores
-        if (onPaymentSuccess) {
-          onPaymentSuccess(parseFloat(amount))
-        }
-        
-        // ⭐ Step 3: Update reputation (on-time payment)
-        await getReputationScore(currentWallet.address)
-        toast.success('⭐ Reputation updated!')
-        
-        console.log('Payment tracked:', paymentRecord)
-        
-        // Refresh wallet balance
-        await loadBalance(currentWallet.id)
-      } else {
-        throw new Error(transferResult.error || 'Transfer failed')
+      toast.success(`💰 ${token} payment sent!`)
+      // Track payment
+      const paymentRecord = trackPayment({
+        amount: parseFloat(amount),
+        propertyAddress,
+        landlordAddress: '0x1234567890123456789012345678901234567890',
+        tenantAddress: currentWallet.address,
+        txHash: transferResult.transactionHash || transferResult.transactionId || 'tx_' + Date.now(),
+        tenancyDuration: parseInt(duration)
+      })
+      addProperty({
+        address: propertyAddress,
+        amount,
+        duration,
+        tenantAddress: currentWallet.address
+      })
+      setStep('success')
+      if (onPaymentSuccess) {
+        onPaymentSuccess(parseFloat(amount))
       }
+      await updateReputationScore(currentWallet.address, true)
+      const rep = await getReputationScore(currentWallet.address)
+      toast.success(`⭐ Reputation updated! New score: ${rep.score}`)
+      console.log('Payment tracked:', paymentRecord)
+      await loadBalance(currentWallet.id)
     } catch (error) {
       console.error('💥 Payment failed:', error)
       toast.error(`Payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -282,26 +346,7 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
 
           {step === 'payment' && (
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Wallet Info */}
-              {currentWallet && (
-                <div className="bg-gradient-to-r from-blue-500/20 to-purple-600/20 border border-blue-400/30 rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <CreditCard className="w-6 h-6 text-blue-300" />
-                      <h3 className="text-lg font-semibold text-blue-200">Your Wallet</h3>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-blue-100/80">Balance</p>
-                      <p className="text-xl font-bold text-blue-200">{walletBalance} USDC</p>
-                    </div>
-                  </div>
-                  <div className="text-sm text-blue-100/60">
-                    <p className="mb-1">Address: {currentWallet.address.substring(0, 6)}...{currentWallet.address.substring(-4)}</p>
-                    <p>Network: {currentWallet.blockchain}</p>
-                  </div>
-                </div>
-              )}
-
+              {/* Property Address */}
               <div>
                 <label className="block text-white/90 font-medium mb-3">Property Address</label>
                 <input
@@ -315,24 +360,7 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
                 />
               </div>
 
-              <div>
-                <label className="block text-white/90 font-medium mb-3">Rent Amount (USDC)</label>
-                <div className="relative">
-                  <input
-                    ref={amountRef}
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors backdrop-blur-sm pr-20"
-                    required
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-400 to-indigo-500 text-white text-sm px-3 py-1 rounded-lg font-medium">
-                    USDC
-                  </div>
-                </div>
-              </div>
-
+              {/* Tenancy Duration */}
               <div>
                 <label className="block text-white/90 font-medium mb-3">Tenancy Duration (Months)</label>
                 <select
@@ -347,6 +375,69 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
                 </select>
               </div>
 
+              {/* Select Payment Token */}
+              <div>
+                <label className="block text-white/90 font-medium mb-2">Select Payment Token</label>
+                <select
+                  value={token}
+                  onChange={e => setToken(e.target.value as 'USDC' | 'EURC')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-black text-white"
+                >
+                  <option value="USDC">USDC (USD Coin)</option>
+                  <option value="EURC">EURC (Euro Coin)</option>
+                </select>
+              </div>
+
+              {/* Rent Amount */}
+              <div>
+                <label className="block text-white/90 font-medium mb-3">Rent Amount ({token})
+                  <span className="ml-2 text-xs text-yellow-300">[token: {token}]</span>
+                </label>
+                <div className="relative">
+                  <input
+                    ref={amountRef}
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors backdrop-blur-sm pr-20"
+                    required
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-400 to-indigo-500 text-white text-sm px-3 py-1 rounded-lg font-medium">
+                    {token}
+                  </div>
+                </div>
+              </div>
+
+              {/* Source Chain Selection */}
+              <div>
+                <label className="block text-white/90 font-medium mb-2">Source Chain</label>
+                <select
+                  value={sourceChain}
+                  onChange={e => setSourceChain(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-black text-white"
+                >
+                  <option value="polygon">Polygon</option>
+                  <option value="ethereum">Ethereum</option>
+                  <option value="avalanche">Avalanche</option>
+                </select>
+              </div>
+
+              {/* Destination Chain Selection */}
+              <div>
+                <label className="block text-white/90 font-medium mb-2">Destination Chain</label>
+                <select
+                  value={destinationChain}
+                  onChange={e => setDestinationChain(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-black text-white"
+                >
+                  <option value="polygon">Polygon</option>
+                  <option value="ethereum">Ethereum</option>
+                  <option value="avalanche">Avalanche</option>
+                </select>
+              </div>
+
+              {/* Escrow Protection Info */}
               <div className="bg-gradient-to-r from-purple-500/20 to-indigo-600/20 border border-purple-400/30 rounded-xl p-4">
                 <p className="text-purple-200 text-sm">
                   💡 Your payment will be held in escrow and released to the landlord according to the tenancy terms.
@@ -354,31 +445,7 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
                 </p>
               </div>
 
-              {/* Cross-Chain Bridge Option */}
-              <div className="bg-gradient-to-r from-blue-500/20 to-cyan-600/20 border border-blue-400/30 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">🌉</div>
-                    <div>
-                      <h4 className="font-semibold text-blue-200 mb-1">Need USDC from another chain?</h4>
-                      <p className="text-blue-100/80 text-sm">
-                        Bridge USDC from Ethereum, Polygon, or other networks
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // This could open a modal with CrossChainBridge component
-                      toast('🌉 Bridge Kit integration ready! This would open the Circle Bridge Kit widget.');
-                    }}
-                    className="bg-blue-500/30 hover:bg-blue-500/50 text-blue-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Bridge USDC
-                  </button>
-                </div>
-              </div>
-
+              {/* Pay Button */}
               <button
                 type="submit"
                 disabled={isProcessing || !amount || !propertyAddress}
@@ -392,7 +459,7 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
                 ) : (
                   <>
                     <CreditCard size={20} />
-                    <span>Pay ${amount || '0'} USDC</span>
+                    <span>Pay ${amount || '0'} {token}</span>
                   </>
                 )}
               </button>
@@ -413,7 +480,7 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
               
               <h3 className="text-3xl font-bold text-white mb-3">Payment Successful! 🎉</h3>
               <p className="text-white/70 mb-4 text-lg">
-                Your rent payment of {amount} USDC has been processed successfully
+                Your rent payment of {amount} {token} has been processed successfully
               </p>
               
               {/* Enhanced Success Message */}
@@ -429,7 +496,7 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
                 <div className="text-sm text-green-200 space-y-3">
                   <div className="flex justify-between">
                     <span>Amount:</span>
-                    <span className="font-semibold">{amount} USDC</span>
+                    <span className="font-semibold">{amount} {token}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Property:</span>
@@ -441,7 +508,7 @@ export default function PaymentDialog({ isOpen, onClose, onPaymentSuccess }: Pay
                   </div>
                   <div className="flex justify-between">
                     <span>Safety Contribution:</span>
-                    <span className="font-semibold">{(parseFloat(amount || '0') * 0.1).toFixed(2)} USDC</span>
+                    <span className="font-semibold">{(parseFloat(amount || '0') * 0.1).toFixed(2)} {token}</span>
                   </div>
                 </div>
               </div>

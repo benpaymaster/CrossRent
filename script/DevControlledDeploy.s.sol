@@ -113,9 +113,9 @@ contract DevControlledDeploy is Script {
         // Also mint tokens to some demo addresses for testing
         console.log("7. Setting up Demo Addresses...");
         address[] memory demoAddresses = new address[](3);
-        demoAddresses[0] = 0x1234567890123456789012345678901234567890; // Demo tenant
-        demoAddresses[1] = 0x0987654321098765432109876543210987654321; // Demo landlord
-        demoAddresses[2] = 0xABCDEFabcdefABCDefabcdefAbCdEfAbCdEfAbCdEf; // Demo user
+    demoAddresses[0] = address(0x1234567890123456789012345678901234567890); // Demo tenant
+    demoAddresses[1] = address(0x0987654321098765432109876543210987654321); // Demo landlord
+    demoAddresses[2] = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266; // Demo user
         
         for (uint i = 0; i < demoAddresses.length; i++) {
             usdc.mint(demoAddresses[i], 1000000 * 10**6); // 1M USDC each

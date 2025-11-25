@@ -6,12 +6,13 @@
 [![User Tested](https://img.shields.io/badge/User%20Tested-17%20Responses-brightgreen)](https://github.com/benpaymaster/CrossRent)
 
 > **"Global Rent. Universal Credit. Global Reputation."**
-> 
+>
 > Making rent payments as easy as sending a text message - no crypto knowledge required. **Tested with 17 real users showing 100% success rate!**
 
 ## 🎯 Problem Statement
 
 Traditional rental payments are broken:
+
 - **Complex Setup**: Multiple apps, bank transfers, crypto wallets confuse users
 - **No Credit Building**: Rent payments don't improve credit scores
 - **Security Deposits**: Money locked in basic escrow with no protection
@@ -20,6 +21,7 @@ Traditional rental payments are broken:
 ## 💡 Solution
 
 CrossRent creates the first **non-crypto friendly rental platform** where:
+
 - 💳 **Instant Payments**: Wallet created automatically when you pay rent - no setup required
 - 📈 **Build Reputation**: Each payment increases your verifiable rental credit score
 - 🛡️ **Smart Escrow**: Automated deposit handling with built-in dispute resolution
@@ -28,18 +30,21 @@ CrossRent creates the first **non-crypto friendly rental platform** where:
 ## 📈 **REAL IMPACT METRICS**
 
 ### 🎯 **Validated Problem-Solution Fit**
+
 - **17 survey responses** from real potential users
-- **85% struggled** with current rent payment methods  
+- **85% struggled** with current rent payment methods
 - **92% prefer USDC** for international transactions
 - **100% want** on-chain rental reputation building
 
 ### 🏆 **Live User Testing Success**
+
 - **4/4 users** successfully paid rent **without any guidance**
 - **Zero failed transactions** in live testing
 - **"I wish Venmo was this easy"** - actual user quote
 - **100% completion rate** vs. traditional crypto apps (typically 10-30%)
 
-### 💡 **Innovation Metrics** 
+### 💡 **Innovation Metrics**
+
 - **First rental platform** with automatic wallet creation
 - **Zero crypto knowledge required** - breakthrough UX
 - **Instant global payments** via USDC on Arc
@@ -48,19 +53,22 @@ CrossRent creates the first **non-crypto friendly rental platform** where:
 ## 🧪 **User Testing Results (17 Responses + 4 Live Tests)**
 
 ### ✅ **What Users Said:**
+
 - **100% found it simple**: "I wish Venmo was this easy"
 - **4/4 users** completed rent payments successfully **without any guidance**
 - **"Finally, something that just works"** - International student feedback
 
 ### 🔧 **Key Improvements Made Based on Feedback:**
+
 1. **🚫 REMOVED Connect Wallet Friction**: No more "Connect Wallet" buttons - wallet created automatically when paying
 2. **📱 Simplified UI**: Clean, non-crypto interface anyone can use
 3. **🎯 Single Clear CTA**: One prominent "START PAYING RENT NOW" button
 4. **📊 Real Payment Tracking**: Landlords see tenant payments and addresses instantly
 
 ### 📊 **Survey Insights:**
+
 - **85% struggled** with traditional rent payment methods
-- **92% prefer USDC** for international payments  
+- **92% prefer USDC** for international payments
 - **100% want** rental reputation scores
 
 ## 🔵 Circle Integration Architecture
@@ -68,41 +76,47 @@ CrossRent creates the first **non-crypto friendly rental platform** where:
 ### Production-Ready Circle SDK Implementation
 
 **Backend Integration** (Circle SDKs Installed & Ready)
+
 ```javascript
 // Real Circle Developer Controlled Wallets
-const { initiateDeveloperControlledWalletsClient } = require('@circle-fin/w3s-pw-web-sdk');
-const { client } = require('@circle-fin/developer-controlled-wallets');
+const {
+  initiateDeveloperControlledWalletsClient,
+} = require("@circle-fin/w3s-pw-web-sdk");
+const { client } = require("@circle-fin/developer-controlled-wallets");
 
-// Cross-Chain Transfer Protocol (CCTP) 
-const { CCTPProvider } = require('@circle-fin/provider-cctp-v2');
+// Cross-Chain Transfer Protocol (CCTP)
+const { CCTPProvider } = require("@circle-fin/provider-cctp-v2");
 
 // Bridge Kit for seamless UX
-const { BridgeKit } = require('@circle-fin/bridge-kit');
+const { BridgeKit } = require("@circle-fin/bridge-kit");
 ```
 
 **Frontend Integration** (Bridge Kit SDK Ready)
+
 ```typescript
 // Bridge Kit Integration
-import { BridgeKit } from '@circle-fin/bridge-kit';
-import { openBridgeWidget } from '../lib/bridgeService';
+import { BridgeKit } from "@circle-fin/bridge-kit";
+import { openBridgeWidget } from "../lib/bridgeService";
 
 // Cross-chain USDC transfers via Circle CCTP
 const bridgeResult = await openBridgeWidget({
   amount: rentAmount,
-  sourceChain: 'ETH-SEPOLIA', 
-  destinationChain: 'ARB-SEPOLIA',
-  destinationAddress: landlordWallet.address
+  sourceChain: "ETH-SEPOLIA",
+  destinationChain: "ARB-SEPOLIA",
+  destinationAddress: landlordWallet.address,
 });
 ```
 
 ### 🏆 Circle Implementation Status
+
 - ✅ **Developer Controlled Wallets**: Production-ready SDK integration
-- ✅ **USDC/EURC Transfers**: Native stablecoin transactions implemented  
+- ✅ **USDC/EURC Transfers**: Native stablecoin transactions implemented
 - ✅ **Cross-Chain Transfers**: CCTP API endpoints ready for production
 - ✅ **Bridge Kit UI**: Frontend components integrated and tested
 - ✅ **Arc Blockchain**: Multi-chain USDC support with Circle infrastructure
 
 ### 📱 User Experience Achieved
+
 - **Zero Crypto Complexity**: Circle wallets created automatically
 - **One-Click Rent Payments**: USDC transfers without gas fee management
 - **Cross-Chain Capability**: Bridge USDC from any supported network
@@ -112,6 +126,7 @@ const bridgeResult = await openBridgeWidget({
 ## 🏗️ What We Actually Built
 
 ### Smart Contracts (Arc Blockchain)
+
 ```
 contracts/
 ├── RentCreditEscrow.sol      # Automated rent escrow with credit building
@@ -122,6 +137,7 @@ contracts/
 ```
 
 ### Frontend Application (Next.js)
+
 ```
 frontend/
 ├── components/
@@ -136,6 +152,7 @@ frontend/
 ```
 
 ### Backend API
+
 ```
 backend/
 └── server.js                 # Feedback collection and user testing
@@ -150,43 +167,46 @@ backend/
 
 **Watch the full 3-minute demo**: https://www.loom.com/share/2788850d31d14b03bfc30631be419ae5
 
-*See how tenants pay rent with zero crypto knowledge and landlords track payments in real-time!*
+_See how tenants pay rent with zero crypto knowledge and landlords track payments in real-time!_
 
 ## ⚡ **For Judges: 2-Minute Quick Test**
 
 **Want to see it work immediately?**
 
 1. **Visit**: https://crossrent-arc.netlify.app
-2. **Click**: "START PAYING RENT NOW" 
+2. **Click**: "START PAYING RENT NOW"
 3. **Enter**: Any property address + $2500 rent
 4. **Watch**: Automatic wallet creation + payment flow
 5. **See**: Reputation score increase + real-time updates
 
 **No setup, no wallet downloads, no crypto knowledge needed!**
 
-*Note: Demo mode - no real USDC required, see full flow in action*
+_Note: Demo mode - no real USDC required, see full flow in action_
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 16+
 - Git
 
 ### Installation
+
 ```bash
 # Clone repository
 git clone https://github.com/benpaymaster/CrossRent.git
 cd CrossRent
 
 # Start the application
-cd frontend 
-npm install 
+cd frontend
+npm install
 npm run dev
 
 # Application runs on http://localhost:3001
 ```
 
 ### Try the Demo
+
 1. Click **"START PAYING RENT NOW"** - no wallet setup required!
 2. Enter rent amount and property address
 3. Wallet automatically created and funded for testing
@@ -198,11 +218,12 @@ npm run dev
 ### 🔵 Circle API Integration Deep Dive
 
 **1. Developer Controlled Wallets**
+
 ```javascript
 // POST /api/wallet/create - Production Ready Implementation
 {
   endpoint: '/api/wallet/create',
-  method: 'POST', 
+  method: 'POST',
   circle_sdk: '@circle-fin/developer-controlled-wallets',
   implementation: 'Automatic wallet creation for tenants/landlords',
   networks: ['ETH-SEPOLIA', 'ARB-SEPOLIA', 'AVAX-FUJI'],
@@ -211,12 +232,13 @@ npm run dev
 ```
 
 **2. Cross-Chain Transfer Protocol (CCTP)**
+
 ```javascript
 // POST /api/cctp/transfer - Native USDC Bridging
 {
   endpoint: '/api/cctp/transfer',
   method: 'POST',
-  circle_sdk: '@circle-fin/provider-cctp-v2', 
+  circle_sdk: '@circle-fin/provider-cctp-v2',
   implementation: 'Cross-chain rent payments without wrapped tokens',
   transfer_time: '10-15 minutes',
   supported_chains: 'Ethereum ↔ Arbitrum ↔ Avalanche',
@@ -225,12 +247,13 @@ npm run dev
 ```
 
 **3. Bridge Kit SDK**
+
 ```javascript
 // Frontend Bridge Widget Integration
 {
   component: 'CrossChainBridge.tsx',
   circle_sdk: '@circle-fin/bridge-kit',
-  implementation: 'Pre-built UI for cross-chain USDC transfers', 
+  implementation: 'Pre-built UI for cross-chain USDC transfers',
   user_experience: 'One-click bridging with transfer tracking',
   integration: 'Embedded in PaymentDialog component',
   status: '✅ SDK Integrated'
@@ -238,11 +261,12 @@ npm run dev
 ```
 
 **4. USDC Native Integration**
+
 ```solidity
 // Smart Contract Integration
 contract RentCreditEscrow {
     IERC20 public immutable USDC; // Native Circle USDC token
-    
+
     function payRent(uint256 amount) external {
         USDC.transferFrom(tenant, address(this), amount);
         // Automated escrow with Circle infrastructure
@@ -251,29 +275,33 @@ contract RentCreditEscrow {
 ```
 
 ### Circle Integration Status Summary
-| Circle Technology | Implementation Status | Production Ready |
-|-------------------|---------------------|------------------|
-| 🏦 **Programmable Wallets** | ✅ SDK Installed & Configured | ✅ Yes |
-| 🌉 **CCTP Protocol** | ✅ API Endpoints Ready | ✅ Yes | 
-| 🚀 **Bridge Kit** | ✅ UI Components Integrated | ✅ Yes |
-| 💰 **USDC Transfers** | ✅ Smart Contracts Deployed | ✅ Yes |
-| 🔗 **Arc Blockchain** | ✅ Multi-chain Support | ✅ Yes |
+
+| Circle Technology           | Implementation Status         | Production Ready |
+| --------------------------- | ----------------------------- | ---------------- |
+| 🏦 **Programmable Wallets** | ✅ SDK Installed & Configured | ✅ Yes           |
+| 🌉 **CCTP Protocol**        | ✅ API Endpoints Ready        | ✅ Yes           |
+| 🚀 **Bridge Kit**           | ✅ UI Components Integrated   | ✅ Yes           |
+| 💰 **USDC Transfers**       | ✅ Smart Contracts Deployed   | ✅ Yes           |
+| 🔗 **Arc Blockchain**       | ✅ Multi-chain Support        | ✅ Yes           |
 
 ### Circle Integration
+
 - ✅ **Developer Wallets**: Automatic wallet creation on first payment
 - ✅ **USDC Transactions**: All payments in stable currency
 - ✅ **Arc Gateway**: Circle integration with Arc blockchain
 - ✅ **No User Friction**: Wallet management invisible to users
 
-### Smart Contract Features  
+### Smart Contract Features
+
 - ✅ **Automated Escrow**: Smart contracts handle deposit logic
 - ✅ **Credit Building**: Reputation scores stored on-chain
 - ✅ **Multi-Currency**: Support for USDC, EURC, and more
 - ✅ **Cross-Chain Ready**: Built for future multi-chain expansion
 
 ### Frontend Innovation
+
 - ✅ **Zero Crypto UX**: No "Connect Wallet" buttons or Web3 jargon
-- ✅ **Real-Time Updates**: Live payment tracking and notifications  
+- ✅ **Real-Time Updates**: Live payment tracking and notifications
 - ✅ **Mobile Responsive**: Works perfectly on all devices
 - ✅ **Dual Perspective**: Switch between tenant and landlord views
 
@@ -281,21 +309,23 @@ contract RentCreditEscrow {
 
 The application includes realistic test scenarios:
 
-| Property | Monthly Rent | Status | Tenant Score |
-|----------|-------------|---------|--------------|
-| 123 Main St, Apt 4B | $2,500 | Active | 820 |
-| 456 Oak Ave, Unit 2A | $1,875 | Active | 785 |
-| 789 Pine St, Suite 1C | $3,200 | New | 750 |
+| Property              | Monthly Rent | Status | Tenant Score |
+| --------------------- | ------------ | ------ | ------------ |
+| 123 Main St, Apt 4B   | $2,500       | Active | 820          |
+| 456 Oak Ave, Unit 2A  | $1,875       | Active | 785          |
+| 789 Pine St, Suite 1C | $3,200       | New    | 750          |
 
 ## 🎯 Arc Hackathon Achievements
 
 ### Challenge 1: Advanced Programmable Logic ✅
+
 - **Smart Escrow System**: Conditional deposit releases based on lease terms
 - **Dynamic Credit Scoring**: On-chain reputation building with each payment
 - **Risk Pool Management**: 10% of deposits create shared landlord insurance
 - **Multi-Party Logic**: Automated dispute resolution (future multisig capability)
 
-### Challenge 2: Circle Integration with Arc ✅  
+### Challenge 2: Circle Integration with Arc ✅
+
 - **Seamless USDC Flow**: Native USDC transactions on Arc blockchain
 - **Developer Wallets**: Invisible wallet management using Circle's developer tools
 - **User Experience Focus**: Complex blockchain operations hidden behind simple interface
@@ -304,12 +334,14 @@ The application includes realistic test scenarios:
 ## 📈 Future Roadmap
 
 ### Next Features (Not Yet Implemented)
+
 - **Multi-sig Dispute Resolution**: 6-party voting for complex disputes
 - **Cross-Chain Bridging**: USDC transfers between multiple networks
 - **IPFS Integration**: Decentralized document storage
 - **Advanced Analytics**: The Graph indexing for payment insights
 
 ### Current Focus
+
 - **User Experience**: Making blockchain invisible to users
 - **Real-World Testing**: Continuous feedback integration
 - **Stability**: Robust payment processing and error handling
@@ -317,15 +349,17 @@ The application includes realistic test scenarios:
 ## 🛠️ Technology Stack
 
 **What We Actually Use:**
+
 - **Smart Contracts**: Solidity, Foundry, OpenZeppelin
-- **Frontend**: Next.js 14, TypeScript, TailwindCSS  
+- **Frontend**: Next.js 14, TypeScript, TailwindCSS
 - **Blockchain**: Arc Network, Circle Developer Wallets
 - **Payments**: USDC, Circle APIs
 - **Backend**: Node.js, Express
 
 **Not Currently Implemented:**
+
 - ~~WAGMI~~ (Using Circle SDKs directly)
-- ~~RainbowKit~~ (No manual wallet connection needed)  
+- ~~RainbowKit~~ (No manual wallet connection needed)
 - ~~IPFS~~ (Future feature)
 - ~~The Graph~~ (Future feature)
 - ~~Multi-sig~~ (Future feature)
@@ -333,6 +367,7 @@ The application includes realistic test scenarios:
 ## 🧪 Testing the Application
 
 ### User Flow Test
+
 1. Open http://localhost:3001
 2. Click the big purple "START PAYING RENT NOW" button
 3. Enter any rent amount ($1000-$5000 recommended)
@@ -342,6 +377,7 @@ The application includes realistic test scenarios:
 7. Switch to landlord view using toggle to see received payments
 
 ### What to Look For
+
 - **No crypto complexity**: No wallet downloads or seed phrases
 - **Instant setup**: Account ready in seconds
 - **Real data flow**: Payment shows up in landlord dashboard
@@ -350,11 +386,13 @@ The application includes realistic test scenarios:
 ## 📊 Performance Metrics
 
 **User Experience**:
+
 - 4/4 users completed payments without guidance
 - 0 failed transactions in testing
 - Average completion time: 45 seconds
 
 **Technical**:
+
 - 100% uptime during testing period
 - <2 second transaction confirmation
 - Mobile responsive design tested on iOS/Android
@@ -362,40 +400,98 @@ The application includes realistic test scenarios:
 ## ⚡ **Arc Blockchain Integration Showcase**
 
 ### 🌟 **Why Arc Was Perfect for CrossRent:**
+
 - **Lightning Fast**: Sub-second transaction confirmations for rent payments
 - **Ultra-Low Fees**: $0.001 transaction costs vs $10+ on Ethereum
 - **USDC Native**: Perfect for global rent payments and stability
 - **Developer Experience**: Clean APIs that enabled rapid development
 
 ### 🔧 **Arc Features We Leveraged:**
+
 ```typescript
 // Circle Developer Wallets + Arc = Magic
 const wallet = await createWallet({
-  blockchain: 'ARC',
-  currency: 'USDC'
-})
+  blockchain: "ARC",
+  currency: "USDC",
+});
 
 // Instant rent payment processing
 const payment = await processRentPayment({
   amount: rentAmount,
   property: propertyAddress,
-  escrow: smartContractAddress
-})
+  escrow: smartContractAddress,
+});
 ```
 
 ### 📊 **Arc Performance in Production:**
+
 - **100% uptime** during user testing
 - **<1 second** average transaction time
 - **$0.001** average transaction cost
 - **Zero failed transactions** across all test payments
 
 ### 💡 **Arc Gateway Benefits Realized:**
+
 - Seamless USDC transfers across any supported network
 - Unified developer experience for cross-chain functionality
 - Built-in Circle integration eliminated payment rail complexity
 - Real-time transaction status for superior UX
 
 **Arc enabled us to build what users actually want: payments that just work!** 🚀
+
+## 🗳️ Consensus/Dispute Module: OptimisticDemocracy
+
+### Overview
+
+The OptimisticDemocracy contract enables robust dispute resolution and consensus for rental agreements. It supports:
+
+- Dispute raising by any party
+- Voting by designated signatories
+- Optimistic finalization if no dispute is raised
+- Appeals with DAO voting and final decision logic
+- Events for frontend notifications and integration
+
+### Key Features
+
+- **Dispute Lifecycle**: Raised → Voting → Resolved → Appealed → Finalized
+- **Multi-party Voting**: 3 signatories per party, 4-of-6 multisig logic
+- **Appeal Mechanism**: Any party can appeal with a fee, triggering DAO vote
+- **DAO Voting**: 7-day window for DAO signatories to vote on appeals
+- **Finalization**: Deposit returned based on outcome; events emitted for frontend
+
+### Smart Contract Location
+
+- `contracts/OptimisticDemocracy.sol`
+
+### Test Coverage
+
+- Foundry tests in `test/OptimisticDemocracy.t.sol` cover:
+  - Dispute raising
+  - Voting and finalization
+  - Appeal and DAO voting
+  - Edge cases and state transitions
+
+### Integration Points
+
+- Can be linked to multisig escrow for dispute handling
+- Emits events for frontend notification and workflow automation
+
+### Usage Example
+
+```solidity
+// Raise a dispute
+uint256 disputeId = optimisticDemocracy.raiseDispute("Deposit not returned");
+// Cast votes
+optimisticDemocracy.vote(disputeId, true);
+// Finalize after challenge period
+optimisticDemocracy.finalize(disputeId);
+// Appeal and DAO voting
+optimisticDemocracy.appeal{value: 0.01 ether}(disputeId);
+optimisticDemocracy.daoVote(disputeId, true);
+optimisticDemocracy.finalizeDAO(disputeId);
+```
+
+---
 
 ## 🔗 Links
 
@@ -408,19 +504,22 @@ const payment = await processRentPayment({
 ## 💰 **Market Impact & Scalability**
 
 ### 🌍 **Total Addressable Market:**
+
 - **$3.7 trillion** global rental market
 - **1.2 billion** people rent globally 🌍
-- **45 million** renters in US alone  
+- **45 million** renters in US alone
 - **68%** of international students struggle with rent payments
 - **$500 billion** in security deposits locked without earning interest
 
 ### 🚀 **Scaling with Arc:**
+
 - **Handle 1M+ transactions/day** with Arc's throughput
 - **Global deployment ready** - USDC works everywhere
 - **Instant settlement** eliminates traditional 3-5 day delays
 - **Programmable money** enables automatic late fees, utilities, repairs
 
 ### 📈 **Business Model Validated:**
+
 - **0.5% transaction fee** = sustainable revenue at scale
 - **Credit scoring premium** for verified rental history
 - **Property management SaaS** for landlord tools
@@ -451,4 +550,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 ---
 
 **Built with ❤️ for Arc Hackathon 2025**  
-*Making rent payments as simple as sending a text message*
+_Making rent payments as simple as sending a text message_

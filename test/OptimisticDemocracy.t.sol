@@ -56,17 +56,28 @@ contract OptimisticDemocracyTest is Test {
         vm.warp(block.timestamp + 7 days + 1);
         democracy.finalizeDAO(id);
         (
-            , // proposer
-            , // description
-            , // challengeDeadline
-            , // votesFor
-            , // votesAgainst
-            , // status
-            , // appealed
-            , // appealFee
-            , // daoVoteDeadline
-            , // daoVotesFor
-            , // daoVotesAgainst
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+            ,
+            // proposer
+            // description
+            // challengeDeadline
+            // votesFor
+            // votesAgainst
+            // status
+            // appealed
+            // appealFee
+            // daoVoteDeadline
+            // daoVotesFor
+            // daoVotesAgainst
             bool finalOutcome
         ) = democracy.getDispute(id);
         assertEq(finalOutcome, true); // DAO votes 2 for, 1 against

@@ -136,12 +136,26 @@ export default function Dashboard({ userType, setUserType, onRegisterPaymentCall
     if (onRegisterPaymentCallback) {
       onRegisterPaymentCallback(handlePaymentSuccess)
     }
-    
+    // Listen for reputation change events (real-time update)
+    const repListener = (e: any) => {
+      if (e?.detail) {
+        // If event detail has userType and score, update accordingly
+        if (e.detail.userType && typeof e.detail.score === 'number') {
+          setReputationScore((prev: any) => ({ ...prev, [e.detail.userType]: e.detail.score }))
+        } else if (typeof e.detail.tenant === 'number') {
+          // Legacy: if only tenant is present
+          setReputationScore((prev: any) => ({ ...prev, tenant: e.detail.tenant }))
+        }
+      }
+    }
+    window.addEventListener('reputationChanged', repListener)
     // Load properties on mount
     setProperties(getProperties())
-    
     // Load initial payment statistics
     updatePaymentStats()
+    return () => {
+      window.removeEventListener('reputationChanged', repListener)
+    }
   }, [onRegisterPaymentCallback, userType, setTotalPaid, setPaymentCount, setReputationScore])
 
   // Onboarding effect for first-time users

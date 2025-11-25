@@ -307,6 +307,9 @@ app.post('/api/transactions/status', async (req, res) => {
 });
 
 // Cross-Chain Transfer Protocol (CCTP) endpoint
+const { CCTPProvider } = require('@circle-fin/provider-cctp-v2');
+const CIRCLE_API_KEY = process.env.CIRCLE_API_KEY;
+
 app.post('/api/cctp/transfer', async (req, res) => {
     try {
         const { 
@@ -340,31 +343,36 @@ app.post('/api/cctp/transfer', async (req, res) => {
             });
         }
 
-        let transferResult;
+        // Initialize CCTPProvider
+        const cctp = new CCTPProvider({ apiKey: CIRCLE_API_KEY });
 
-        // Demo mode - simulated CCTP transfer with realistic behavior
-        transferResult = {
-            transferId: 'cctp_' + Date.now(),
-            transactionHash: '0xcctp' + Date.now().toString(16),
-            estimatedTime: '10-15 minutes'
-        };
+        // Initiate CCTP transfer (production)
+        const transfer = await cctp.transfers.create({
+            sourceChain,
+            destinationChain,
+            amount: amount.toString(),
+            tokenSymbol: token,
+            sourceWalletAddress: sourceWallet.address,
+            destinationAddress
+        });
 
+        // Deduct balance in demo wallet (simulate real transfer)
         sourceWallet.balance -= parseFloat(amount);
         wallets.set(sourceWalletId, sourceWallet);
 
-        console.log(`CCTP transfer simulated: ${amount} USDC from ${sourceChain} to ${destinationChain}`);
+        console.log(`CCTP transfer initiated: ${amount} ${token} from ${sourceChain} to ${destinationChain}`);
 
         res.json({
             success: true,
-            transferId: transferResult.transferId,
-            transactionHash: transferResult.transactionHash,
+            transferId: transfer.id || transfer.transferId || ('cctp_' + Date.now()),
+            transactionHash: transfer.transactionHash || '',
             amount: parseFloat(amount),
             token,
             sourceChain,
             destinationChain,
-            estimatedTime: transferResult.estimatedTime,
-            status: 'initiated',
-            note: 'CCTP simulation - production ready implementation with Circle SDK'
+            estimatedTime: '10-15 minutes',
+            status: transfer.status || 'initiated',
+            note: 'CCTP transfer via Circle SDK'
         });
 
     } catch (error) {

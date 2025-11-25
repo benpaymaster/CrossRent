@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ArrowRight, Wallet, CreditCard, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react'
 import { createWallet, executeTransfer, getWalletBalance, getAllWallets, type Wallet as WalletType, type Transfer } from '../lib/wallet'
-import { createEscrow, releaseRentPayment, getReputationScore } from '../lib/contracts'
+import { createEscrow, releaseRentPayment, getReputationScore, updateReputationScore } from '../lib/contracts'
 import { addProperty } from '../lib/properties'
 import toast from 'react-hot-toast'
 
@@ -15,6 +15,7 @@ interface PaymentFormProps {
 
 export default function PaymentForm({ userType, onPaymentSuccess, onShowProperties }: PaymentFormProps) {
   const [amount, setAmount] = useState('')
+  const [token, setToken] = useState<'USDC' | 'EURC'>('USDC')
   const [duration, setDuration] = useState('3')
   const [propertyAddress, setPropertyAddress] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
@@ -22,6 +23,8 @@ export default function PaymentForm({ userType, onPaymentSuccess, onShowProperti
   const [walletBalance, setWalletBalance] = useState('0')
   const [step, setStep] = useState<'payment' | 'success'>('payment') // Start with payment form
   const [isCreatingWallet, setIsCreatingWallet] = useState(false)
+  const [sourceChain, setSourceChain] = useState('polygon')
+  const [destinationChain, setDestinationChain] = useState('polygon')
   const propertyRef = useRef<HTMLInputElement | null>(null)
   const amountRef = useRef<HTMLInputElement | null>(null)
 
@@ -93,19 +96,19 @@ export default function PaymentForm({ userType, onPaymentSuccess, onShowProperti
       
       toast.success('🏠 Escrow created successfully!')
       
-      // 💰 Step 2: Execute USDC transfer
+      // 💰 Step 2: Execute token transfer
       const transfer: Transfer = {
         amount,
         destinationAddress: '0x1234567890123456789012345678901234567890',
-        tokenId: 'USDC',
-        sourceChain: 'polygon',
-        destinationChain: 'polygon'
+        tokenId: token,
+        sourceChain,
+        destinationChain
       }
 
       const transferResult = await executeTransfer(wallet.id, transfer)
       
       if (transferResult.success) {
-        toast.success('💰 USDC payment sent!')
+        toast.success(`💰 ${token} payment sent!`)
         setStep('success')
         
         // Add property to landlord's view
@@ -121,9 +124,10 @@ export default function PaymentForm({ userType, onPaymentSuccess, onShowProperti
           onPaymentSuccess(parseFloat(amount))
         }
         
-        // ⭐ Step 3: Update reputation (on-time payment)
-        await getReputationScore(currentWallet.address)
-        toast.success('⭐ Reputation updated!')
+  // ⭐ Step 3: Update reputation (on-time payment)
+  await updateReputationScore(currentWallet.address, true)
+  const rep = await getReputationScore(currentWallet.address)
+  toast.success(`⭐ Reputation updated! New score: ${rep.score}`)
         
         // Refresh wallet balance
         await loadBalance(currentWallet.id)
@@ -172,13 +176,13 @@ export default function PaymentForm({ userType, onPaymentSuccess, onShowProperti
           <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">Payment Successful!</h3>
           <p className="text-white/70 mb-4">
-            Your rent payment of {amount} USDC has been processed successfully
+            Your rent payment of {amount} {token} has been processed successfully
           </p>
           <div className="bg-green-500/20 border border-green-400/30 rounded-xl p-4 mb-6">
             <div className="text-sm text-green-200">
               <div className="flex justify-between mb-2">
                 <span>Amount:</span>
-                <span className="font-semibold">{amount} USDC</span>
+                <span className="font-semibold">{amount} {token}</span>
               </div>
               <div className="flex justify-between mb-2">
                 <span>Property:</span>
@@ -208,7 +212,7 @@ export default function PaymentForm({ userType, onPaymentSuccess, onShowProperti
           <h3 className="text-lg font-semibold text-green-200 mb-3">Rent Management</h3>
           <p className="text-green-100/80 text-sm leading-relaxed">
             Monitor incoming rent payments, manage escrow funds, and track tenant payment history. 
-            All transactions are secured on-chain with USDC.
+            All transactions are secured on-chain with {token}.
           </p>
         </div>
 
@@ -236,6 +240,33 @@ export default function PaymentForm({ userType, onPaymentSuccess, onShowProperti
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Source Chain Selection */}
+      <div className="mb-4">
+        <label className="block text-white/90 font-medium mb-2">Source Chain</label>
+        <select
+          value={sourceChain}
+          onChange={e => setSourceChain(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+        >
+          <option value="polygon">Polygon</option>
+          <option value="ethereum">Ethereum</option>
+          <option value="avalanche">Avalanche</option>
+        </select>
+      </div>
+
+      {/* Destination Chain Selection */}
+      <div className="mb-4">
+        <label className="block text-white/90 font-medium mb-2">Destination Chain</label>
+        <select
+          value={destinationChain}
+          onChange={e => setDestinationChain(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+        >
+          <option value="polygon">Polygon</option>
+          <option value="ethereum">Ethereum</option>
+          <option value="avalanche">Avalanche</option>
+        </select>
+      </div>
       {/* Progress Indicator */}
       <div className="flex justify-center mb-6">
         <div className="flex items-center space-x-4">
@@ -268,7 +299,7 @@ export default function PaymentForm({ userType, onPaymentSuccess, onShowProperti
             </div>
             <div className="text-right">
               <p className="text-sm text-blue-100/80">Balance</p>
-              <p className="text-xl font-bold text-blue-200">{walletBalance} USDC</p>
+              <p className="text-xl font-bold text-blue-200">{walletBalance} {token}</p>
             </div>
           </div>
           <div className="text-sm text-blue-100/60">
@@ -278,36 +309,8 @@ export default function PaymentForm({ userType, onPaymentSuccess, onShowProperti
         </div>
       )}
 
-      <div>
-        <label className="block text-white/90 font-medium mb-3">Property Address</label>
-        <input
-          ref={propertyRef}
-          type="text"
-          value={propertyAddress}
-          onChange={(e) => setPropertyAddress(e.target.value)}
-          placeholder="Enter property address"
-          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors backdrop-blur-sm"
-          required
-        />
-      </div>
 
-      <div>
-        <label className="block text-white/90 font-medium mb-3">Rent Amount (USDC)</label>
-        <div className="relative">
-          <input
-            ref={amountRef}
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
-            className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors backdrop-blur-sm pr-20"
-            required
-          />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-400 to-indigo-500 text-white text-sm px-3 py-1 rounded-lg font-medium">
-            USDC
-          </div>
-        </div>
-      </div>
+      {/* Only keep the single set of Property Address and Rent Amount fields below (the ones with mb-4) */}
 
       <div>
         <label className="block text-white/90 font-medium mb-3">Tenancy Duration (Months)</label>
@@ -347,14 +350,61 @@ export default function PaymentForm({ userType, onPaymentSuccess, onShowProperti
           </>
         ) : (
           <>
-            <span>💰 Pay ${amount || '0'} USDC Rent</span>
+            <span>💰 Pay ${amount || '0'} {token} Rent</span>
             <ArrowRight size={20} />
           </>
         )}
       </button>
 
       <div className="text-center text-white/60 text-sm">
-        Powered by Circle USDC • Secured on blockchain
+        Powered by Circle {token} • Secured on blockchain
+      </div>
+      {/* Token selection for European/global users */}
+      {/* Move token selection after property address and before rent amount */}
+      {/* Property Address */}
+      <div className="mb-4">
+        <label className="block text-white/90 font-medium mb-3">Property Address</label>
+        <input
+          ref={propertyRef}
+          type="text"
+          value={propertyAddress}
+          onChange={e => setPropertyAddress(e.target.value)}
+          placeholder="Enter property address"
+          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors backdrop-blur-sm"
+          required
+        />
+      </div>
+
+      {/* Token selection for European/global users */}
+      <div className="mb-4">
+        <label className="block text-white/90 font-medium mb-2">Select Payment Token</label>
+        <select
+          value={token}
+          onChange={e => setToken(e.target.value as 'USDC' | 'EURC')}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="USDC">USDC (USD Coin)</option>
+          <option value="EURC">EURC (Euro Coin) — France, Ireland, Denmark, Germany, Switzerland, Austria</option>
+        </select>
+      </div>
+
+      {/* Rent Amount */}
+      <div className="mb-4">
+        <label className="block text-white/90 font-medium mb-3">Rent Amount ({token})</label>
+        <div className="relative">
+          <input
+            ref={amountRef}
+            type="number"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            placeholder="0.00"
+            className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors backdrop-blur-sm pr-20"
+            required
+          />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-400 to-indigo-500 text-white text-sm px-3 py-1 rounded-lg font-medium">
+            {token}
+          </div>
+        </div>
       </div>
     </form>
   )
