@@ -593,3 +593,45 @@ Set these in your `.env` file to connect the frontend to deployed contracts:
 NEXT_PUBLIC_MULTISIG_ESCROW_ADDRESS=<deployed_multisig_escrow_address>
 NEXT_PUBLIC_DISPUTE_CONTRACT_ADDRESS=<deployed_dispute_contract_address>
 ```
+
+---
+
+## 🚀 Cross-Chain Bridge & Extensible Token/Chain Onboarding
+
+### Feature Overview
+
+- Supports bridging any ERC20 token to new chains using Circle CCTP (mocked for tests)
+- Admins can onboard new tokens and chain domains at runtime
+- Fully tested with mock contracts for seamless developer experience
+
+### Usage Example
+
+```solidity
+// Add a new supported token
+bridge.addSupportedToken(address(newToken));
+
+// Add a new chain domain mapping
+bridge.addChainDomain(12345, 99); // chainId, domain
+
+// Bridge tokens to another chain
+bridge.bridgeTokens(address(newToken), 1000 ether, 12345, recipientAddress);
+```
+
+### Testing Instructions
+
+- Run all tests with:
+  ```bash
+  forge test
+  ```
+- Key tests:
+  - `test_AddSupportedTokenAndChain`: Verifies onboarding of new tokens/chains
+  - `test_BridgeTokensWithNewTokenAndChain`: Verifies bridging logic and event emission
+- Circle CCTP is mocked for local testing; production integration uses real contracts
+
+### Developer Notes
+
+- Easily extend to support more tokens/chains by calling the onboarding functions
+- Mock contracts ensure fast, reliable CI and local development
+- Demonstrates advanced Solidity, cross-chain, and DeFi engineering
+
+---
