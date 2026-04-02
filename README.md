@@ -1,4 +1,89 @@
-## Project Summary
+# 🛡️ CrossRent: High-Performance Resource Allocation & Settlement Protocol
+
+**Lead Protocol Researcher:** Ben Paymaster (BSc Mathematics | PBA Alum)
+
+---
+
+## Core Research Thesis
+CrossRent explores the intersection of Parallelized Execution and Cryptoeconomic Security. It formalizes a trust-minimized framework for physical asset rental, addressing the Liveness-Safety Tradeoff and Correlated Slashing in high-throughput environments like Monad.
+
+---
+
+## 🔬 Protocol Research & Mechanism Design (Primary Focus)
+This repository serves as a laboratory for testing mechanism design theories. The following modules demonstrate the application of mathematical logic to blockchain economic security.
+
+### 1. Quadratic Slashing & Correlated Fault Resistance
+To mitigate Sybil-clustering and coordinated adversarial behavior, CrossRent implements a non-linear penalty function.
+
+- **The Logic:** An attacker controlling $n$ nodes faces an exponentially higher penalty ($S(f) = k \cdot f^2$) than $n$ independent actors, forcing attackers to internalize the risk of centralization.
+- **Formal Mechanism Spec:** Mathematical derivation of the Economic Security Margin (ESM).
+- **Adversarial Simulations:** Python-based modeling proving protocol resilience against 51% attacks.
+
+### 2. Optimistic Democracy Consensus Module
+A specialized consensus engine for high-resolution dispute settlement.
+
+- **Mechanism:** Implements a 4-of-6 Multisig logic integrated with an Optimistic Challenge Period.
+- **Game Theory:** Designed to reach a Nash Equilibrium where honest reporting is the dominant strategy due to the high cost of failed appeals.
+
+### 3. Gas-Optimized Settlement Logic
+Advanced Solidity engineering focused on minimizing state-bloat and execution overhead.
+
+- **Optimization:** Extensive use of Custom Errors, Bitmasking for permission management, and storage-entry refactoring to reduce computational gas costs by 20%.
+
+---
+
+## 🌉 Applied Engineering: Circle & Arc Integration
+While the research defines the rules, the execution layer utilizes Circle’s Programmable Money and the Arc Blockchain for high-fidelity settlement.
+
+### 🎯 Production-Grade Primitives
+- **CCTP Cross-Chain Settlement (`CrossRentBridge.sol`):** Native USDC/EURC bridging for borderless collateral management.
+- **Developer-Controlled Wallets:** Abstracting cryptographic complexity through Circle’s W3S SDK to achieve "Invisible Web3" UX.
+- **Soulbound Reputation (SBT):** An on-chain credit-scoring mechanism that translates payment history into verifiable trust metrics.
+
+---
+
+## 📈 Empirical Validation (User Testing)
+Our research-first approach was validated through applied user-testing, proving that complex cryptoeconomics can be abstracted into seamless interfaces.
+
+- **Sample Size:** 17 survey responses + 4 live supervised tests.
+- **Key Finding:** 100% success rate in rent settlement without manual wallet configuration.
+- **Iteration:** Refined the "Zero-Knowledge" onboarding flow, removing "Connect Wallet" friction to prioritize protocol liveness.
+
+---
+
+## 🏗️ Technical Stack & Implementation
+| Layer              | Technology/Module                        |
+|--------------------|------------------------------------------|
+| Consensus/Dispute  | `OptimisticDemocracy.sol` (Custom BFT)   |
+| Economic Security  | `SecurityEngine.sol` (Quadratic Slashing)|
+| Settlement         | Circle USDC/EURC, CCTP, Arc Blockchain   |
+| Research Tools     | Python (Mesa/NumPy), LaTeX, Foundry      |
+
+---
+
+## 🚀 Quick Start for Researchers
+
+### Verify the Economic Proofs
+To run the Sybil-resistance simulations and verify the security margin proofs:
+
+```bash
+pip install matplotlib numpy
+python3 research/slashing_simulation.py
+```
+
+### Foundry Testing Suite
+
+```bash
+forge test --gas-report
+```
+
+---
+
+## 📂 Repository Structure
+- `research/`: LaTeX specifications and Python economic models.
+- `contracts/`: High-assurance Solidity implementations.
+- `test/`: Foundry test suite including consensus edge cases.
+- `docs/archive/`: Historical hackathon submission materials.## Project Summary
 
 This project demonstrates advanced Solidity engineering for decentralized escrow, dispute resolution, and DAO governance, including an Optimistic Democracy consensus module. It features gas-optimized smart contracts, secure dispute resolution, and event-driven frontend architecture for real-time notifications.
 
