@@ -83,7 +83,7 @@ forge test --gas-report
 - `research/`: LaTeX specifications and Python economic models.
 - `contracts/`: High-assurance Solidity implementations.
 - `test/`: Foundry test suite including consensus edge cases.
-- `docs/archive/`: Historical hackathon submission materials.## Project Summary
+- `docs/archive/`: Historical hackathon submission materials.
 
 This project demonstrates advanced Solidity engineering for decentralized escrow, dispute resolution, and DAO governance, including an Optimistic Democracy consensus module. It features gas-optimized smart contracts, secure dispute resolution, and event-driven frontend architecture for real-time notifications.
 
