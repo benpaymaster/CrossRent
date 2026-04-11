@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.34;
 import "forge-std/Test.sol";
 import "../contracts/RentEscrowStateMachine.sol";
 import "../contracts/DisputeResolutionDAO.sol";
 
 contract EscrowDAOIntegrationTest is Test {
-    RentEscrow escrow;
+    RentEscrowStateMachine escrow;
     DisputeResolutionDAO dao;
     address renter = address(0x1);
     address landlord = address(0x2);
@@ -15,9 +15,21 @@ contract EscrowDAOIntegrationTest is Test {
     uint256 rent = 2 ether;
 
     function setUp() public {
-        dao = new DisputeResolutionDAO();
-        escrow = new RentEscrow(renter, landlord, deposit, rent, address(dao));
-    }
+    dao = new DisputeResolutionDAO();
+
+    escrow = new RentEscrowStateMachine();
+
+    address admin = address(this);
+
+    escrow.initialize(
+        renter,
+        landlord,
+        deposit,
+        rent,
+        address(dao),
+        admin
+    );
+}
 
     function testDisputeReferralAndFullRefund() public {
         // Deposit and rent paid
@@ -40,8 +52,7 @@ contract EscrowDAOIntegrationTest is Test {
         // Apply outcome in escrow
         vm.prank(renter);
         escrow.applyDisputeOutcome();
-        assertEq(escrow.state(), RentEscrow.State.Refunded);
-    }
+        assertEq(uint8(escrow.state()), uint8(RentEscrowStateMachine.State.Refunded));    }
 
     function testDisputeReferralAndPartialRefund() public {
         vm.prank(renter);
@@ -59,8 +70,7 @@ contract EscrowDAOIntegrationTest is Test {
         dao.resolveDispute(disputeId);
         vm.prank(renter);
         escrow.applyDisputeOutcome();
-        assertEq(escrow.state(), RentEscrow.State.Refunded);
-    }
+        assertEq(uint8(escrow.state()), uint8(RentEscrowStateMachine.State.Refunded));    }
 
     function testDisputeReferralAndNoRefund() public {
         vm.prank(renter);
@@ -78,7 +88,7 @@ contract EscrowDAOIntegrationTest is Test {
         dao.resolveDispute(disputeId);
         vm.prank(renter);
         escrow.applyDisputeOutcome();
-        assertEq(escrow.state(), RentEscrow.State.Completed);
+        assertEq(escrow.state(), RentEscrowStateMachine.State.Completed);
     }
 
     function testAppealFlow() public {
@@ -107,6 +117,5 @@ contract EscrowDAOIntegrationTest is Test {
         dao.resolveDispute(disputeId);
         vm.prank(renter);
         escrow.applyDisputeOutcome();
-        assertEq(escrow.state(), RentEscrow.State.Refunded);
-    }
+        assertEq(uint8(escrow.state()), uint8(RentEscrowStateMachine.State.Refunded));    }
 }

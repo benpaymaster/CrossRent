@@ -1,36 +1,45 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
-// Replace your current imports with these:
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-contract RentEscrow is Initializable, AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
-    // Transaction ordering modes
-    enum OrderingMode { FIFO, PGA, PBS, RANDOM }
-    OrderingMode public orderingMode;
+import {DisputeResolutionDAO} from "./DisputeResolutionDAO.sol";
 
-    // For PBS/Flashbots-style auction
-    struct Bid {
-        address sender;
-        uint256 amount;
-    }
-    Bid[] public bids;
-    mapping(address => uint256) public pendingBids;
-    uint256 public auctionEndTime;
-    bool public auctionActive;
-
-    event OrderingModeChanged(OrderingMode newMode);
-    event BidPlaced(address indexed sender, uint256 amount);
-    event AuctionSettled(address winner, uint256 amount);
-    // Roles
+contract RentEscrowStateMachine is
+    Initializable,
+    AccessControlUpgradeable,
+    UUPSUpgradeable,
+    ReentrancyGuardUpgradeable
+{
+    // =========================
+    // ROLES
+    // =========================
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
-    enum State { Initialized, DepositPaid, RentPaid, Completed, Refunded, Disputed }
-    State public state;
+    // =========================
+    // STATE MACHINE
+    // =========================
+    enum State {
+        Initialized,
+        DepositPaid,
+        RentPaid,
+        Disputed,
+        Completed,
+        Refunded
+    }
 
+    enum RefundType {
+        None,
+        Full,
+        Partial
+    }
+
+    // =========================
+    // STORAGE
+    // =========================
     address public renter;
     address public landlord;
 
@@ -40,54 +49,75 @@ contract RentEscrow is Initializable, AccessControlUpgradeable, UUPSUpgradeable,
     uint256 public depositPaid;
     uint256 public rentPaid;
 
+    State public state;
+    RefundType public refundType;
+
     DisputeResolutionDAO public dao;
     uint256 public disputeId;
 
-    // Idempotency + safety flags
-    bool public disputeActive;
     bool public disputeFinalized;
+    bool public payoutExecuted;
+    bool public disputeActive;
 
-    // Events
+    uint256 public lastDisputeTime;
+    uint256 public constant DISPUTE_COOLDOWN = 1 days;
+
+    // =========================
+    // EVENTS
+    // =========================
     event DepositReceived(address indexed renter, uint256 amount);
     event RentReceived(address indexed renter, uint256 amount);
     event StateChanged(State newState);
-    event RefundIssued(address indexed to, uint256 amount);
-    event DisputeRaised(address indexed by, uint256 disputeId);
-    event DisputeOutcomeApplied(uint256 disputeId, DisputeResolutionDAO.Outcome outcome);
 
+    event DisputeRaised(uint256 indexed disputeId);
+    event DisputeOutcomeApplied(uint256 indexed disputeId, RefundType outcome);
+
+    // =========================
+    // ERRORS
+    // =========================
     error NotRenter();
     error NotLandlord();
     error InvalidState();
+    error InvalidAddress();
     error IncorrectDeposit();
     error IncorrectRent();
     error DaoNotSet();
-    error DisputeNotAllowed();
-    error DisputeNotActive();
+    error CooldownActive();
     error DisputeAlreadyFinalized();
-    error PaymentFailed();
-    error InvalidAddress();
+    error PayoutAlreadyExecuted();
+    error DisputeNotResolved();
+    error Unauthorized();
 
+    // =========================
+    // MODIFIERS
+    // =========================
     modifier onlyRenter() {
         if (msg.sender != renter) revert NotRenter();
         _;
     }
+
     modifier onlyLandlord() {
         if (msg.sender != landlord) revert NotLandlord();
         _;
     }
-    modifier inState(State expected) {
-        if (state != expected) revert InvalidState();
-        _;
-    }
-    modifier canRaiseDispute() {
-        // Only allow disputes when funds exist and before final payout
-        if (!(state == State.DepositPaid || state == State.RentPaid)) revert DisputeNotAllowed();
+
+    modifier inState(State s) {
+        if (state != s) revert InvalidState();
         _;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
+    // =========================
+    // UUPS AUTH
+    // =========================
+    function _authorizeUpgrade(address)
+        internal
+        override
+        onlyRole(UPGRADER_ROLE)
+    {}
 
-    /// @notice initializer (replaces constructor for upgradeability)
+    // =========================
+    // INIT
+    // =========================
     function initialize(
         address _renter,
         address _landlord,
@@ -100,228 +130,151 @@ contract RentEscrow is Initializable, AccessControlUpgradeable, UUPSUpgradeable,
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
 
-        if (_renter == address(0) || _landlord == address(0) || _dao == address(0) || admin == address(0)) {
-            revert InvalidAddress();
-        }
+        if (
+            _renter == address(0) ||
+            _landlord == address(0) ||
+            _dao == address(0) ||
+            admin == address(0)
+        ) revert InvalidAddress();
 
         renter = _renter;
         landlord = _landlord;
         depositAmount = _depositAmount;
         rentAmount = _rentAmount;
-
         dao = DisputeResolutionDAO(_dao);
 
         state = State.Initialized;
 
-        orderingMode = OrderingMode.FIFO; // Default
-
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(UPGRADER_ROLE, admin);
     }
-    // Admin can set ordering mode
-    function setOrderingMode(OrderingMode mode) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        orderingMode = mode;
-        emit OrderingModeChanged(mode);
-    }
 
-    // --- PGA: Priority Gas Auction (simulate by allowing highest gas price tx to win) ---
-    // In practice, this is handled by miners/validators, but we can simulate by allowing only the first tx per block or by gas price (not enforceable in EVM)
-
-    // --- PBS/Flashbots-style: Auction for transaction inclusion ---
-    function startAuction(uint256 durationSeconds) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!auctionActive, "Auction already active");
-        auctionActive = true;
-        auctionEndTime = block.timestamp + durationSeconds;
-        delete bids;
-    }
-
-    function placeBid() external payable {
-        require(auctionActive, "Auction not active");
-        require(block.timestamp < auctionEndTime, "Auction ended");
-        require(msg.value > 0, "Bid must be positive");
-        bids.push(Bid(msg.sender, msg.value));
-        pendingBids[msg.sender] += msg.value;
-        emit BidPlaced(msg.sender, msg.value);
-    }
-
-    function settleAuction() external {
-        require(auctionActive, "Auction not active");
-        require(block.timestamp >= auctionEndTime, "Auction not ended");
-        auctionActive = false;
-        // Find highest bid
-        uint256 highest = 0;
-        address winner;
-        for (uint256 i = 0; i < bids.length; i++) {
-            if (bids[i].amount > highest) {
-                highest = bids[i].amount;
-                winner = bids[i].sender;
-            }
-        }
-        if (winner != address(0)) {
-            // Winner can call privileged function (e.g., payDeposit/payRent) next
-            // For demo: refund all others
-            for (uint256 i = 0; i < bids.length; i++) {
-                if (bids[i].sender != winner) {
-                    payable(bids[i].sender).transfer(bids[i].amount);
-                    pendingBids[bids[i].sender] = 0;
-                }
-            }
-            emit AuctionSettled(winner, highest);
-        }
-    }
-
-    // --- Randomized ordering (MEV resistance) ---
-    function getRandomWinner() public view returns (address) {
-        require(bids.length > 0, "No bids");
-        uint256 rand = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, bids.length)));
-        return bids[rand % bids.length].sender;
-    }
-
-    // Reject accidental ETH sends (keeps accounting clean)
-    receive() external payable {
-        revert("Direct ETH not accepted");
-    }
-
-    function payDeposit() external payable onlyRenter inState(State.Initialized) nonReentrant {
-        // Transaction ordering logic
-        if (orderingMode == OrderingMode.PBS) {
-            require(!auctionActive, "Auction must be settled");
-            // Only auction winner can call
-            require(bids.length > 0, "No bids");
-            address winner;
-            uint256 highest = 0;
-            for (uint256 i = 0; i < bids.length; i++) {
-                if (bids[i].amount > highest) {
-                    highest = bids[i].amount;
-                    winner = bids[i].sender;
-                }
-            }
-            require(msg.sender == winner, "Not auction winner");
-        } else if (orderingMode == OrderingMode.RANDOM) {
-            require(!auctionActive, "Auction must be settled");
-            require(bids.length > 0, "No bids");
-            require(msg.sender == getRandomWinner(), "Not selected");
-        }
+    // =========================
+    // PAYMENTS
+    // =========================
+    function payDeposit()
+        external
+        payable
+        onlyRenter
+        inState(State.Initialized)
+        nonReentrant
+    {
         if (msg.value != depositAmount) revert IncorrectDeposit();
+
         depositPaid = msg.value;
         state = State.DepositPaid;
+
         emit DepositReceived(msg.sender, msg.value);
         emit StateChanged(state);
     }
 
-    function payRent() external payable onlyRenter inState(State.DepositPaid) nonReentrant {
-        // Transaction ordering logic
-        if (orderingMode == OrderingMode.PBS) {
-            require(!auctionActive, "Auction must be settled");
-            require(bids.length > 0, "No bids");
-            address winner;
-            uint256 highest = 0;
-            for (uint256 i = 0; i < bids.length; i++) {
-                if (bids[i].amount > highest) {
-                    highest = bids[i].amount;
-                    winner = bids[i].sender;
-                }
-            }
-            require(msg.sender == winner, "Not auction winner");
-        } else if (orderingMode == OrderingMode.RANDOM) {
-            require(!auctionActive, "Auction must be settled");
-            require(bids.length > 0, "No bids");
-            require(msg.sender == getRandomWinner(), "Not selected");
-        }
+    function payRent()
+        external
+        payable
+        onlyRenter
+        inState(State.DepositPaid)
+        nonReentrant
+    {
         if (msg.value != rentAmount) revert IncorrectRent();
+
         rentPaid = msg.value;
         state = State.RentPaid;
+
         emit RentReceived(msg.sender, msg.value);
         emit StateChanged(state);
     }
 
-    function completeLease() external onlyLandlord inState(State.RentPaid) nonReentrant {
-        // Optional policy: disallow completion while a dispute is active
-        if (disputeActive) revert DisputeNotAllowed();
-
-        state = State.Completed;
-        emit StateChanged(state);
-
-        _payout(landlord, depositPaid + rentPaid);
-    }
-
-    function refundDeposit() external onlyLandlord inState(State.DepositPaid) nonReentrant {
-        // Optional policy: disallow refund while dispute is active
-        if (disputeActive) revert DisputeNotAllowed();
-
-        state = State.Refunded;
-        emit StateChanged(state);
-        emit RefundIssued(renter, depositPaid);
-
-        _payout(renter, depositPaid);
-    }
-
-    function raiseDispute() external canRaiseDispute nonReentrant {
-        if (msg.sender != renter && msg.sender != landlord) revert DisputeNotAllowed();
+    // =========================
+    // DISPUTE CREATION (HARDENED)
+    // =========================
+    function raiseDispute()
+        external
+        nonReentrant
+    {
+        if (msg.sender != renter && msg.sender != landlord) revert Unauthorized();
         if (address(dao) == address(0)) revert DaoNotSet();
+        if (state != State.RentPaid) revert InvalidState();
+        if (block.timestamp < lastDisputeTime + DISPUTE_COOLDOWN) revert CooldownActive();
 
-        // Move to disputed state
         state = State.Disputed;
-        emit StateChanged(state);
-
         disputeActive = true;
         disputeFinalized = false;
+        payoutExecuted = false;
 
-        // IMPORTANT:
-        // DAO is configured to only accept disputes from approved escrows/factories.
-        // You will grant ESCROW_ROLE to this escrow address (or to its factory) in the DAO.
-        disputeId = dao.createDispute(address(this), renter, landlord, depositAmount);
+        lastDisputeTime = block.timestamp;
 
-        emit DisputeRaised(msg.sender, disputeId);
+        disputeId = dao.createDispute(
+            address(this),
+            renter,
+            landlord,
+            depositAmount
+        );
+
+        emit DisputeRaised(disputeId);
+        emit StateChanged(state);
     }
 
-    function applyDisputeOutcome() external nonReentrant {
-        if (state != State.Disputed) revert InvalidState();
-        if (!disputeActive) revert DisputeNotActive();
+    // =========================
+    // APPLY DAO RESULT (CRITICAL PATH)
+    // =========================
+    function applyDisputeOutcome()
+        external
+        nonReentrant
+        inState(State.Disputed)
+    {
         if (disputeFinalized) revert DisputeAlreadyFinalized();
-        if (disputeId == 0) revert DisputeNotActive();
+        if (payoutExecuted) revert PayoutAlreadyExecuted();
 
-        (DisputeResolutionDAO.Outcome outcome, bool resolved) = dao.getOutcome(disputeId);
-        require(resolved && outcome != DisputeResolutionDAO.Outcome.None, "DAO not resolved");
+        (DisputeResolutionDAO.Outcome outcome, bool resolved) =
+            dao.getOutcome(disputeId);
 
-        // Idempotency lock — guarantees this can only be applied once
+        if (!resolved) revert DisputeNotResolved();
+
         disputeFinalized = true;
-        disputeActive = false;
+        payoutExecuted = true;
+
+        uint256 total = depositPaid + rentPaid;
 
         if (outcome == DisputeResolutionDAO.Outcome.FullRefund) {
+            refundType = RefundType.Full;
             state = State.Refunded;
-            emit StateChanged(state);
-            emit RefundIssued(renter, depositPaid);
-            _payout(renter, depositPaid);
 
-        } else if (outcome == DisputeResolutionDAO.Outcome.PartialRefund) {
-            // Demo policy: 50/50 split. In production, DAO should return exact bps/amounts.
-            uint256 partialRefund = depositPaid / 2;
-
+            _payout(renter, total);
+        }
+        else if (outcome == DisputeResolutionDAO.Outcome.PartialRefund) {
+            refundType = RefundType.Partial;
             state = State.Refunded;
-            emit StateChanged(state);
 
-            emit RefundIssued(renter, partialRefund);
-            _payout(renter, partialRefund);
+            uint256 renterShare = (total * 50) / 100;
 
-            // landlord receives remaining deposit + full rent
-            _payout(landlord, (depositPaid - partialRefund) + rentPaid);
-
-        } else {
-            // NoRefund
+            _payout(renter, renterShare);
+            _payout(landlord, total - renterShare);
+        }
+        else {
+            refundType = RefundType.None;
             state = State.Completed;
-            emit StateChanged(state);
 
-            _payout(landlord, depositPaid + rentPaid);
+            _payout(landlord, total);
         }
 
-        emit DisputeOutcomeApplied(disputeId, outcome);
+        emit DisputeOutcomeApplied(disputeId, refundType);
+        emit StateChanged(state);
     }
 
+    // =========================
+    // INTERNAL PAYOUT
+    // =========================
     function _payout(address to, uint256 amount) internal {
         (bool ok, ) = to.call{value: amount}("");
-        if (!ok) revert PaymentFailed();
+        require(ok, "TRANSFER_FAILED");
     }
 
-    uint256[45] private __gap;
+    // =========================
+    // ETH SAFETY
+    // =========================
+    receive() external payable {
+        revert("ETH_NOT_ACCEPTED");
+    }
+
+    uint256[48] private __gap;
 }

@@ -17,6 +17,12 @@ To mitigate Sybil-clustering and coordinated adversarial behavior, CrossRent imp
 - **The Logic:** An attacker controlling $n$ nodes faces an exponentially higher penalty $S(f) = k \cdot f^2$ than $n$ independent actors, forcing attackers to internalize the risk of centralization.
 - **Economic Security Margin (ESM):** Modeled in Python to prove protocol resilience against 51% attacks.
 - **Visual Verification:** Generated via `research/slashing_simulation.py`.
+- **Implementation:** Built with O(1) fault tracking to ensure constant gas cost regardless of network size.
+- **Security Enhancements:**
+  - Reentrancy-safe fund handling (checks-effects-interactions pattern)
+  - Strict validation on slashing inputs to prevent malformed claims
+  - Overflow-safe arithmetic (Solidity 0.8+ checked math)
+  - Isolated accounting per participant to prevent cross-user contamination
 
 ![Slashing Curve](./research/slashing_curve.png)
 
@@ -24,6 +30,14 @@ To mitigate Sybil-clustering and coordinated adversarial behavior, CrossRent imp
 A specialized consensus engine for high-resolution dispute settlement (`contracts/OptimisticDemocracy.sol`).
 - **Mechanism:** Implements a 4-of-6 Multisig logic integrated with an **Optimistic Challenge Period**.
 - **Game Theory:** Designed to reach a **Nash Equilibrium** where honest reporting is the dominant strategy due to the high cost of failed appeals.
+- **Security Enhancements:**
+  - O(1) voter validation using mappings (eliminates unbounded loops)
+  - Double-vote prevention via `hasVoted` tracking
+  - Strict state machine enforcement (invalid transitions revert)
+  - Deadline enforcement for challenge and DAO voting windows
+  - Appeal fee requirement prevents spam/griefing attacks
+  - Immutable finalization once dispute is resolved
+  - Full event emission for off-chain indexing (The Graph ready)
 
 ### 3. Gas-Optimized Settlement Logic
 Advanced Solidity engineering focused on minimizing state-bloat.
@@ -47,7 +61,36 @@ Monad's asynchronous I/O (MonadDB) is the fastest in the ecosystem, but storage 
 - **Tooling:** Developed for **Solidity 0.8.34** to leverage the latest Yul optimizer and Cancun-era transient storage potential.
 
 ## 🌉 Applied Engineering: Circle & Arc Integration
-While the research defines the rules, the execution layer utilizes **Circle’s Programmable Money** and the **Arc Blockchain** for high-fidelity settlement.
+
+CrossRent integrates **Circle’s Programmable Money stack** and the **Arc Blockchain** for high-fidelity settlement and cross-chain collateral flow.
+
+## 🔐 Security Architecture
+
+CrossRent is designed with **defense-in-depth principles**, combining smart contract security, economic incentives, and execution-layer safety.
+
+![Protocol Architecture](./docs/architecture.png)
+
+### Smart Contract Security
+- Reentrancy protection on all fund-moving logic
+- Strict access control via modifiers (e.g. `onlyVoter`)
+- Full state machine validation (invalid transitions revert)
+- Input validation and bounds checking
+- Immutable final states after dispute resolution
+
+### Economic Security
+- Quadratic slashing discourages coordinated attacks
+- Appeal fees prevent spam and griefing
+- Incentive-aligned voting system ensures honest participation
+
+### Execution Safety
+- Deterministic storage layout prevents race conditions
+- Parallel-safe architecture (no shared hot storage slots)
+- Fail-safe DAO escalation layer for dispute resolution
+
+### Observability
+- Full event emission across all critical contract actions
+- Designed for **The Graph indexing**
+- Transparent and auditable dispute lifecycle
 
 ### 🎯 Production-Grade Primitives
 - **CCTP Cross-Chain Settlement (`CrossRentBridge.sol`):** Native USDC/EURC bridging for borderless collateral management.
@@ -71,7 +114,7 @@ Our research-first approach was validated through applied user-testing, proving 
 | Layer | Technology/Module |
 | :--- | :--- |
 | **Consensus/Dispute** | `OptimisticDemocracy.sol` (Custom BFT-lite) |
-| **Economic Security** | `SecurityEngine.sol` (Quadratic Slashing) |
+| **Economic Security** | `RiskBufferVault.sol` (Quadratic Slashing) |
 | **Settlement** | Circle USDC/EURC, CCTP, Arc Blockchain |
 | **Research Tools** | Python (NumPy/Matplotlib), LaTeX, Foundry |
 
@@ -96,6 +139,13 @@ To run the high-assurance test suite and view gas optimization metrics:
 ```bash
 forge test --gas-report
 ```
+### 3. Compile Contracts
+To compile the smart contracts:
+```bash
+forge build
+```
+
+---
 
 ## 📂 Repository Structure
 

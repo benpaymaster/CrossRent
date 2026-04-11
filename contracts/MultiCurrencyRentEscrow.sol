@@ -8,82 +8,183 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 interface IReputationSBT {
-    function updateRentalHistory(address user, IERC20 currency, uint256 amount, bool successful) external;
+    function updateRentalHistory(
+        address user,
+        IERC20 currency,
+        uint256 amount,
+        bool successful
+    ) external;
+
     function getReputationScore(address user) external view returns (uint256);
 }
 
 interface IMultiCurrencyRiskVault {
-    function lockBuffer(uint256 escrowId, IERC20 currency, uint256 amount, uint256 duration, address escrowAddress) external returns (uint256 lockId);
+    function lockBuffer(
+        uint256 escrowId,
+        IERC20 currency,
+        uint256 amount,
+        uint256 duration,
+        address escrowAddress
+    ) external returns (uint256 lockId);
+
     function releaseBuffer(uint256 lockId) external;
-    function claimBuffer(uint256 lockId, address recipient, uint256 amount) external;
+
+    function claimBuffer(
+        uint256 lockId,
+        address recipient,
+        uint256 amount
+    ) external;
 }
 
-contract MultiCurrencyRentEscrow is AccessControlEnumerable, Pausable, ReentrancyGuard {
+contract MultiCurrencyRentEscrow is
+    AccessControlEnumerable,
+    Pausable,
+    ReentrancyGuard
+{
     using SafeERC20 for IERC20;
 
-    bytes32 public constant DISPUTE_RESOLVER_ROLE = keccak256("DISPUTE_RESOLVER_ROLE");
+    // =========================
+    // ROLES
+    // =========================
+    bytes32 public constant DISPUTE_RESOLVER_ROLE =
+        keccak256("DISPUTE_RESOLVER_ROLE");
 
+    // =========================
+    // IMMUTABLES (gas + security)
+    // =========================
     IERC20 public immutable USDC;
     IERC20 public immutable EURC;
-    IReputationSBT public reputation;
-    IMultiCurrencyRiskVault public riskBufferVault;
+    IReputationSBT public immutable reputation;
+    IMultiCurrencyRiskVault public immutable riskBufferVault;
 
-    enum EscrowStatus { None, Active, TenantReleased, LandlordReleased, Disputed, Resolved, Cancelled }
-    enum DisputeOutcome { Pending, TenantFavor, LandlordFavor, Split }
+    // =========================
+    // STATE
+    // =========================
+    enum EscrowStatus {
+        None,
+        Active,
+        Disputed,
+        TenantReleased,
+        LandlordReleased,
+        Cancelled,
+        Resolved
+    }
 
-    // MONAD OPTIMIZATION: Packed Struct (Reduces SSTORE from 12+ slots to 5)
+    enum DisputeOutcome {
+        Pending,
+        TenantFavor,
+        LandlordFavor,
+        Split
+    }
+
+    // =========================
+    // ESCROW STORAGE
+    // =========================
     struct EscrowDetails {
-        address tenant;              // Slot 0
-        EscrowStatus status;         // Slot 0 (1 byte)
-        address landlord;            // Slot 1
-        uint64 startTime;            // Slot 1 (8 bytes)
-        uint64 endTime;              // Slot 2 (8 bytes)
-        uint64 nextRentDue;          // Slot 2 (8 bytes)
-        uint96 monthlyRent;          // Slot 2 (12 bytes)
-        uint96 depositAmount;        // Slot 3 (12 bytes)
-        uint96 damageThreshold;      // Slot 3 (12 bytes)
-        bool autoRelease;            // Slot 3 (1 byte)
-        bool requireInspection;      // Slot 3 (1 byte)
-        bool requireTenantConfirmation; // Slot 3 (1 byte)
-        IERC20 currency;             // Slot 4
-        uint256 riskBufferLockId;    // Slot 5
+        address tenant;
+        address landlord;
+
+        IERC20 currency;
+
+        uint96 depositAmount;
+        uint96 monthlyRent;
+        uint96 damageThreshold;
+
+        uint64 startTime;
+        uint64 endTime;
+        uint64 nextRentDue;
+
+        EscrowStatus status;
+
+        bool autoRelease;
+        bool requireInspection;
+
+        uint256 riskBufferLockId;
+        bool rentSettled;
+        bool finalized;
     }
 
     struct DisputeDetails {
         uint256 escrowId;
         address initiator;
-        uint256 claimedAmount;
         IERC20 currency;
+        uint256 claimedAmount;
         uint256 timestamp;
+
         DisputeOutcome outcome;
         bool resolved;
     }
 
-    // MONAD OPTIMIZATION: Using uint256(keccak256) as keys for Parallel Execution
+    // =========================
+    // STORAGE
+    // =========================
     mapping(uint256 => EscrowDetails) public escrows;
     mapping(uint256 => DisputeDetails) public disputes;
-    
-    // Global counters are now used ONLY for Disputes (Lower frequency than Escrows)
-    uint256 public nextDisputeId = 1;
-    uint256 public usdcToEurcRate = 92e16; 
 
-    event EscrowCreated(uint256 indexed escrowId, address indexed tenant, address indexed landlord, IERC20 currency, uint256 depositAmount);
-    event RentReleased(uint256 indexed escrowId, uint256 amount, IERC20 currency);
-    event DisputeCreated(uint256 indexed disputeId, uint256 indexed escrowId, address indexed initiator);
+    uint256 public nextDisputeId = 1;
+
+    uint256 public usdcToEurcRate = 92e16;
+
+    // =========================
+    // EVENTS
+    // =========================
+    event EscrowCreated(
+        uint256 indexed escrowId,
+        address indexed tenant,
+        address indexed landlord,
+        IERC20 currency,
+        uint256 depositAmount
+    );
+
+    event RentReleased(
+        uint256 indexed escrowId,
+        uint256 amount,
+        IERC20 currency
+    );
+
+    event DisputeCreated(
+        uint256 indexed disputeId,
+        uint256 indexed escrowId,
+        address indexed initiator
+    );
+
     event ExchangeRateUpdated(uint256 newRate);
 
-    constructor(address _usdc, address _eurc, address _reputation, address _riskBufferVault) {
+    event EscrowFinalized(uint256 indexed escrowId);
+
+    // =========================
+    // ERRORS
+    // =========================
+    error InvalidLandlord();
+    error InvalidCurrency();
+    error InvalidState();
+    error Unauthorized();
+    error AlreadyExists();
+    error NotDue();
+    error AlreadyFinalized();
+    error TransferFailed();
+
+    // =========================
+    // CONSTRUCTOR
+    // =========================
+    constructor(
+        address _usdc,
+        address _eurc,
+        address _reputation,
+        address _riskVault
+    ) {
         USDC = IERC20(_usdc);
         EURC = IERC20(_eurc);
         reputation = IReputationSBT(_reputation);
-        riskBufferVault = IMultiCurrencyRiskVault(_riskBufferVault);
+        riskBufferVault = IMultiCurrencyRiskVault(_riskVault);
+
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(DISPUTE_RESOLVER_ROLE, msg.sender);
     }
 
-    /**
-     * @dev Create escrow using Deterministic IDs to enable Parallel Monad Execution
-     */
+    // =========================
+    // CREATE ESCROW (HARDENED)
+    // =========================
     function createEscrow(
         address landlord,
         IERC20 currency,
@@ -93,65 +194,144 @@ contract MultiCurrencyRentEscrow is AccessControlEnumerable, Pausable, Reentranc
         uint64 leaseDuration,
         bool autoRelease,
         bool requireInspection,
-        string calldata propertyDetails // Emitted, not stored, to save MonadDB I/O
+        string calldata propertyDetails
     ) external whenNotPaused nonReentrant returns (uint256 escrowId) {
-        require(landlord != address(0) && landlord != msg.sender, "Invalid landlord");
-        require(currency == USDC || currency == EURC, "Unsupported currency");
+        if (landlord == address(0) || landlord == msg.sender)
+            revert InvalidLandlord();
 
-        // MONAD OPTIMIZATION: Deterministic ID prevents state contention on a global counter
-        escrowId = uint256(keccak256(abi.encodePacked(msg.sender, landlord, block.timestamp, propertyDetails)));
-        require(escrows[escrowId].tenant == address(0), "Collision");
+        if (currency != USDC && currency != EURC) revert InvalidCurrency();
 
-        currency.safeTransferFrom(msg.sender, address(this), uint256(depositAmount));
+        escrowId = uint256(
+            keccak256(
+                abi.encodePacked(
+                    msg.sender,
+                    landlord,
+                    block.timestamp,
+                    propertyDetails
+                )
+            )
+        );
 
-        uint256 lockId = riskBufferVault.lockBuffer(
+        if (escrows[escrowId].tenant != address(0)) revert AlreadyExists();
+
+        EscrowDetails storage e = escrows[escrowId];
+
+        e.tenant = msg.sender;
+        e.landlord = landlord;
+        e.currency = currency;
+
+        e.depositAmount = depositAmount;
+        e.monthlyRent = monthlyRent;
+        e.damageThreshold = damageThreshold;
+
+        e.startTime = uint64(block.timestamp);
+        e.endTime = uint64(block.timestamp + leaseDuration);
+        e.nextRentDue = uint64(block.timestamp + 30 days);
+
+        e.status = EscrowStatus.Active;
+        e.autoRelease = autoRelease;
+        e.requireInspection = requireInspection;
+
+        // risk buffer MUST succeed
+        e.riskBufferLockId = riskBufferVault.lockBuffer(
             escrowId,
             currency,
             (uint256(depositAmount) * 10) / 100,
-            uint256(leaseDuration),
+            leaseDuration,
             address(this)
         );
 
-        escrows[escrowId] = EscrowDetails({
-            tenant: msg.sender,
-            landlord: landlord,
-            currency: currency,
-            depositAmount: depositAmount,
-            monthlyRent: monthlyRent,
-            damageThreshold: damageThreshold,
-            startTime: uint64(block.timestamp),
-            endTime: uint64(block.timestamp) + leaseDuration,
-            nextRentDue: uint64(block.timestamp) + 30 days,
-            status: EscrowStatus.Active,
-            autoRelease: autoRelease,
-            requireInspection: requireInspection,
-            requireTenantConfirmation: true,
-            riskBufferLockId: lockId
+        emit EscrowCreated(
+            escrowId,
+            msg.sender,
+            landlord,
+            currency,
+            depositAmount
+        );
+    }
+
+    // =========================
+    // RENT RELEASE (HARDENED)
+    // =========================
+    function releaseRent(uint256 escrowId)
+        external
+        whenNotPaused
+        nonReentrant
+    {
+        EscrowDetails storage e = escrows[escrowId];
+
+        if (e.status != EscrowStatus.Active) revert InvalidState();
+        if (e.finalized) revert AlreadyFinalized();
+        if (block.timestamp < e.nextRentDue) revert NotDue();
+
+        // only tenant/landlord/admin
+        if (
+            msg.sender != e.tenant &&
+            msg.sender != e.landlord &&
+            !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)
+        ) revert Unauthorized();
+
+        e.nextRentDue += 30 days;
+
+        uint256 amount = uint256(e.monthlyRent);
+
+        e.currency.safeTransfer(e.landlord, amount);
+
+        reputation.updateRentalHistory(
+            e.tenant,
+            e.currency,
+            amount,
+            true
+        );
+
+        emit RentReleased(escrowId, amount, e.currency);
+    }
+
+    // =========================
+    // DISPUTE INIT
+    // =========================
+    function createDispute(uint256 escrowId)
+        external
+        whenNotPaused
+        nonReentrant
+    {
+        EscrowDetails storage e = escrows[escrowId];
+
+        if (e.status != EscrowStatus.Active) revert InvalidState();
+
+        e.status = EscrowStatus.Disputed;
+
+        uint256 disputeId = nextDisputeId++;
+
+        disputes[disputeId] = DisputeDetails({
+            escrowId: escrowId,
+            initiator: msg.sender,
+            currency: e.currency,
+            claimedAmount: uint256(e.depositAmount),
+            timestamp: block.timestamp,
+            outcome: DisputeOutcome.Pending,
+            resolved: false
         });
 
-        emit EscrowCreated(escrowId, msg.sender, landlord, currency, uint256(depositAmount));
+        emit DisputeCreated(disputeId, escrowId, msg.sender);
     }
 
-    function releaseRent(uint256 escrowId) external whenNotPaused nonReentrant {
-        EscrowDetails storage escrow = escrows[escrowId];
-        require(escrow.status == EscrowStatus.Active, "Not active");
-        require(msg.sender == escrow.landlord || msg.sender == escrow.tenant || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Auth");
-        require(block.timestamp >= escrow.nextRentDue, "Early");
-
-        uint256 amount = uint256(escrow.monthlyRent);
-        escrow.nextRentDue += 30 days;
-        escrow.currency.safeTransfer(escrow.landlord, amount);
-
-        reputation.updateRentalHistory(escrow.tenant, escrow.currency, amount, true);
-        emit RentReleased(escrowId, amount, escrow.currency);
-    }
-
-    // Minimal helper for currency parity
-    function updateExchangeRate(uint256 newRate) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    // =========================
+    // ADMIN
+    // =========================
+    function updateExchangeRate(uint256 newRate)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         usdcToEurcRate = newRate;
         emit ExchangeRateUpdated(newRate);
     }
 
-    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) { _pause(); }
-    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) { _unpause(); }
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
 }
