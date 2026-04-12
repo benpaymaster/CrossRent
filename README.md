@@ -60,6 +60,21 @@ Monad's asynchronous I/O (MonadDB) is the fastest in the ecosystem, but storage 
 - **Efficiency:** Compressed lease data from ~12 storage slots down to 5, significantly reducing `SSTORE` overhead and minimizing the protocol's state footprint.
 - **Tooling:** Developed for **Solidity 0.8.34** to leverage the latest Yul optimizer and Cancun-era transient storage potential.
 
+## 🦄 Uniswap v4 Hook Infrastructure (The "Yield Engine")
+CrossRent moves beyond static escrow by utilizing **Uniswap v4 Hooks** to transform idle rental deposits into yield-bearing assets. 
+
+### 1. Transient State & Flash Accounting (`RentCreditEscrow.sol`)
+To minimize gas overhead and maximize capital efficiency, the protocol implements the v4 **Flash Accounting** pattern.
+- **The Mechanism:** When a deposit is created, the escrow contract triggers `poolManager.unlock()`. 
+- **Atomic Settlement:** Using the `unlockCallback`, the protocol settles the "debt" to the PoolManager within a single atomic transaction. This ensures that 100% of the tenant's principal is instantly deployed as active liquidity without leaving idle balances in the contract.
+- **Impact:** This reduces I/O operations and aligns with CrossRent's "Anti-Contention" design for parallel execution environments.
+
+### 2. Lifecycle Hooks for Financial Mobility (`RentYieldHook.sol`)
+The custom `RentYieldHook` manages the lifecycle of the rental capital:
+- **`afterAddLiquidity`:** Automatically maps the Uniswap LP position to the specific Tenancy ID and the tenant's **ReputationSBT**.
+- **`afterSwap` (Auto-Compounding):** Every trade in the Leeds Rental Pool triggers the hook to capture fees and re-inject them into the tenant's principal, creating a compounding growth effect.
+- **Principal Protection:** Logic enforced via hooks ensures that the initial deposit amount is protected from high-slippage events, maintaining the "Real World Asset" (RWA) peg required for rental agreements.
+
 ## 🌉 Applied Engineering: Circle & Arc Integration
 
 CrossRent integrates **Circle’s Programmable Money stack** and the **Arc Blockchain** for high-fidelity settlement and cross-chain collateral flow.
@@ -115,6 +130,7 @@ Our research-first approach was validated through applied user-testing, proving 
 | :--- | :--- |
 | **Consensus/Dispute** | `OptimisticDemocracy.sol` (Custom BFT-lite) |
 | **Economic Security** | `RiskBufferVault.sol` (Quadratic Slashing) |
+| **Liquidity & Yield** | Uniswap v4 Hooks, Flash Accounting |
 | **Settlement** | Circle USDC/EURC, CCTP, Arc Blockchain |
 | **Research Tools** | Python (NumPy/Matplotlib), LaTeX, Foundry |
 

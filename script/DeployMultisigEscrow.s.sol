@@ -2,7 +2,7 @@
 // Foundry script to deploy MultisigRentEscrow.sol
 
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.34;
 
 import "forge-std/Script.sol";
 import {MultisigRentEscrow} from "../contracts/MultisigRentEscrow.sol";
